@@ -7,6 +7,10 @@ import time
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import av
 from av.video.frame import VideoFrame
+from src.violation_logger import ViolationLogger
+import uuid
+import os
+from datetime import datetime
 
 # Class names for the PPE dataset
 CLASS_NAMES = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 
@@ -23,6 +27,27 @@ def load_model(model_path):
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
         return None
+    
+def log_violations(results, img_array):
+    logger = ViolationLogger()
+    violation_classes = ["NO-Hardhat", "NO-Mask", "NO-Safety Vest"]
+
+    if results and len(results) > 0 and hasattr(results[0], 'boxes'):
+        boxes = results[0].boxes.xyxy.cpu().numpy()
+        clss = results[0].boxes.cls.cpu().numpy().astype(int)
+        names = results[0].names if hasattr(results[0], 'names') else {}
+
+        for i, cls in enumerate(clss):
+            label = names[cls] if cls < len(names) else str(cls)
+            if label in violation_classes:
+                x1, y1, x2, y2 = map(int, boxes[i])
+                cropped = img_array[y1:y2, x1:x2]
+                filename = f"{uuid.uuid4()}.jpg"
+                save_path = os.path.join("app/assets", filename)
+                os.makedirs("app/assets", exist_ok=True)
+                cv2.imwrite(save_path, cropped)
+                logger.add_violation(save_path, label)
+
 
 def predict_image(model, image):
     """
@@ -31,6 +56,8 @@ def predict_image(model, image):
     try:
         img_array = np.array(image.convert("RGB"))
         results = model(img_array)
+        log_violations(results, img_array)
+
 
         # Draw bounding boxes and labels manually
         if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
@@ -59,12 +86,14 @@ class YOLOVideoTransformer(VideoTransformerBase):
         img = frame.to_ndarray(format="bgr24")
         if self.model is not None:
             results = self.model(img)
+
+            # ✅ Log violations for webcam too
+            log_violations(results, img)
+
             if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
                 boxes = results[0].boxes.xyxy.cpu().numpy()
                 confs = results[0].boxes.conf.cpu().numpy()
                 clss = results[0].boxes.cls.cpu().numpy().astype(int)
-                print(f"[DEBUG] Detected classes: {clss}")
-                print(f"[DEBUG] Confidences: {confs}")
                 for box, conf, cls in zip(boxes, confs, clss):
                     x1, y1, x2, y2 = map(int, box)
                     label = self.model.names[cls] if hasattr(self.model, 'names') and cls < len(self.model.names) else str(cls)

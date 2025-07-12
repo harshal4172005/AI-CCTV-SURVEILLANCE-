@@ -136,7 +136,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     option = st.radio("Select input source:", 
-                     ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam"],
+                     ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"],
                      index=0)
     
     st.markdown("---")
@@ -369,6 +369,48 @@ elif option == "📹 Real-time Webcam":
                 if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
                     st.session_state["webcam_active"] = False
                     st.rerun()
+
+# ✅ 📑 Violations Report Section — INSERT THIS
+elif option == "📑 Violations Report":
+    from src.violation_logger import ViolationLogger
+    from src.report_generator import PDFReport
+
+    st.markdown("""
+    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
+        <h2 style="color: white; text-align: center;">📑 Session Violations Report</h2>
+        <p style="color: #ccc; text-align: center;">View all PPE violations detected during this session and export them to PDF.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if "logger" not in st.session_state:
+        st.session_state["logger"] = ViolationLogger()
+
+    violations = st.session_state["logger"].get_violations()
+
+    if not violations:
+        st.info("✅ No violations recorded yet.")
+    else:
+        for i, v in enumerate(violations):
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.image(v["image_path"], width=120, caption=f"{v['violation_type']}")
+            with col2:
+                st.markdown(f"**Type:** {v['violation_type']}  \n**Time:** {v['timestamp']}")
+            st.markdown("---")
+
+        col_gen, col_clear = st.columns([1, 1])
+        with col_gen:
+            if st.button("📄 Generate PDF Report"):
+                pdf = PDFReport()
+                pdf_path = pdf.generate(violations)
+                with open(pdf_path, "rb") as f:
+                    st.download_button("⬇️ Download Report", f, file_name="ppe_violations_report.pdf")
+
+        with col_clear:
+            if st.button("🗑️ Clear Violations"):
+                st.session_state["logger"].clear()
+                st.success("Violations cleared.")
+                st.rerun()
 
 # 📊 Footer with Portfolio Information
 st.markdown("---")
