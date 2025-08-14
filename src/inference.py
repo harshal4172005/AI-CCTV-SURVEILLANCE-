@@ -13,20 +13,16 @@ import os
 from datetime import datetime
 import torch
 
-# Class names for the PPE dataset
-CLASS_NAMES = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 
-               'Person', 'Safety Cone', 'Safety Vest', 'machinery', 'vehicle']
-
 # Set the device for inference to GPU if available, otherwise use CPU
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def load_model(model_path):
     """
-    Load the YOLOv8 model from given path with the correct device.
+    Load the YOLOv8 model from given path.
     """
     try:
-        # Load the model with the specified device
-        model = YOLO(model_path, device=DEVICE)
+        # Load the model without specifying the device here
+        model = YOLO(model_path)
         st.success(f"✅ Model loaded successfully from {model_path} on device: {DEVICE}")
         return model
     except Exception as e:
@@ -53,13 +49,15 @@ def log_violations(results, img_array):
                 cv2.imwrite(save_path, cropped)
                 logger.add_violation(save_path, label)
 
+
 def predict_image(model, image):
     """
     Predict and return image with bounding boxes for uploaded image.
     """
     try:
         img_array = np.array(image.convert("RGB"))
-        results = model(img_array)
+        # Pass the device to the prediction call
+        results = model(img_array, device=DEVICE)
         log_violations(results, img_array)
 
         # Draw bounding boxes and labels manually
@@ -94,7 +92,8 @@ class YOLOVideoTransformer(VideoTransformerBase):
         # Skip frames to reduce processing load
         self.frame_count += 1
         if self.frame_count % self.frame_skip == 0 and self.model is not None:
-            results = self.model(img, verbose=False) # verbose=False to clean up terminal
+            # Pass the device to the prediction call
+            results = self.model(img, device=DEVICE, verbose=False)
             self.last_results = results
             log_violations(results, img)
 
