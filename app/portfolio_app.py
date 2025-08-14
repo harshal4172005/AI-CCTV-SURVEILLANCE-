@@ -369,7 +369,6 @@ elif option == "📹 Real-time Webcam":
                 if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
                     st.session_state["webcam_active"] = False
                     st.rerun()
-
 # ✅ 📑 Violations Report Section — INSERT THIS
 elif option == "📑 Violations Report":
     from src.violation_logger import ViolationLogger

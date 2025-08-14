@@ -11,18 +11,23 @@ from src.violation_logger import ViolationLogger
 import uuid
 import os
 from datetime import datetime
+import torch
 
 # Class names for the PPE dataset
 CLASS_NAMES = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 
                'Person', 'Safety Cone', 'Safety Vest', 'machinery', 'vehicle']
 
+# Set the device for inference to GPU if available, otherwise use CPU
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 def load_model(model_path):
     """
-    Load the YOLOv8 model from given path.
+    Load the YOLOv8 model from given path with the correct device.
     """
     try:
-        model = YOLO(model_path)
-        st.success(f"✅ Model loaded successfully from {model_path}")
+        # Load the model with the specified device
+        model = YOLO(model_path, device=DEVICE)
+        st.success(f"✅ Model loaded successfully from {model_path} on device: {DEVICE}")
         return model
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
@@ -48,7 +53,6 @@ def log_violations(results, img_array):
                 cv2.imwrite(save_path, cropped)
                 logger.add_violation(save_path, label)
 
-
 def predict_image(model, image):
     """
     Predict and return image with bounding boxes for uploaded image.
@@ -57,7 +61,6 @@ def predict_image(model, image):
         img_array = np.array(image.convert("RGB"))
         results = model(img_array)
         log_violations(results, img_array)
-
 
         # Draw bounding boxes and labels manually
         if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
@@ -81,15 +84,22 @@ def predict_image(model, image):
 class YOLOVideoTransformer(VideoTransformerBase):
     def __init__(self):
         self.model = None
+        self.frame_skip = 2  # Process every 3rd frame
+        self.frame_count = 0
+        self.last_results = None
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
-        if self.model is not None:
-            results = self.model(img)
 
-            # ✅ Log violations for webcam too
+        # Skip frames to reduce processing load
+        self.frame_count += 1
+        if self.frame_count % self.frame_skip == 0 and self.model is not None:
+            results = self.model(img, verbose=False) # verbose=False to clean up terminal
+            self.last_results = results
             log_violations(results, img)
 
+        if self.last_results is not None:
+            results = self.last_results
             if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
                 boxes = results[0].boxes.xyxy.cpu().numpy()
                 confs = results[0].boxes.conf.cpu().numpy()
@@ -100,7 +110,9 @@ class YOLOVideoTransformer(VideoTransformerBase):
                     color = (0, 255, 0) if 'NO-' not in label else (0, 0, 255)
                     cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
                     cv2.putText(img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+
         return VideoFrame.from_ndarray(img, format="bgr24")
+
 
 def get_or_create_transformer(model):
     # Always create or update the transformer in session state
@@ -115,7 +127,7 @@ def predict_webcam(model):
     webrtc_streamer(
         key="yolo-webcam",
         video_transformer_factory=lambda: get_or_create_transformer(model),
-        media_stream_constraints={"video": True, "audio": False},
+        media_stream_constraints={"video": {"width": 640, "height": 480, "frameRate": 15}, "audio": False},
         async_transform=True,
     )
 
