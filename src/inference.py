@@ -13,6 +13,10 @@ import os
 from datetime import datetime
 import torch
 
+# Class names for the PPE dataset
+CLASS_NAMES = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 
+               'Person', 'Safety Cone', 'Safety Vest', 'machinery', 'vehicle']
+
 # Set the device for inference to GPU if available, otherwise use CPU
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -21,7 +25,6 @@ def load_model(model_path):
     Load the YOLOv8 model from given path.
     """
     try:
-        # Load the model without specifying the device here
         model = YOLO(model_path)
         st.success(f"✅ Model loaded successfully from {model_path} on device: {DEVICE}")
         return model
@@ -43,9 +46,16 @@ def log_violations(results, img_array):
             if label in violation_classes:
                 x1, y1, x2, y2 = map(int, boxes[i])
                 cropped = img_array[y1:y2, x1:x2]
+                
+                # --- MODIFIED CODE ---
+                # Create a subfolder for each violation type
+                violation_folder = os.path.join("app/assets", label)
+                os.makedirs(violation_folder, exist_ok=True)
+                
                 filename = f"{uuid.uuid4()}.jpg"
-                save_path = os.path.join("app/assets", filename)
-                os.makedirs("app/assets", exist_ok=True)
+                save_path = os.path.join(violation_folder, filename)
+                # --- END OF MODIFIED CODE ---
+
                 cv2.imwrite(save_path, cropped)
                 logger.add_violation(save_path, label)
 
@@ -56,7 +66,6 @@ def predict_image(model, image):
     """
     try:
         img_array = np.array(image.convert("RGB"))
-        # Pass the device to the prediction call
         results = model(img_array, device=DEVICE)
         log_violations(results, img_array)
 
@@ -82,17 +91,15 @@ def predict_image(model, image):
 class YOLOVideoTransformer(VideoTransformerBase):
     def __init__(self):
         self.model = None
-        self.frame_skip = 2  # Process every 3rd frame
+        self.frame_skip = 2
         self.frame_count = 0
         self.last_results = None
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
 
-        # Skip frames to reduce processing load
         self.frame_count += 1
         if self.frame_count % self.frame_skip == 0 and self.model is not None:
-            # Pass the device to the prediction call
             results = self.model(img, device=DEVICE, verbose=False)
             self.last_results = results
             log_violations(results, img)
@@ -114,7 +121,6 @@ class YOLOVideoTransformer(VideoTransformerBase):
 
 
 def get_or_create_transformer(model):
-    # Always create or update the transformer in session state
     if "yolo_transformer" not in st.session_state or st.session_state["yolo_transformer"] is None:
         st.session_state["yolo_transformer"] = YOLOVideoTransformer()
     st.session_state["yolo_transformer"].model = model

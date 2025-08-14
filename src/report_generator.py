@@ -1,38 +1,66 @@
-# src/report_generator.py
-
+import pandas as pd
 from fpdf import FPDF
+from datetime import datetime
 import os
 
 class PDFReport:
-    def __init__(self, title="PPE Violation Report"):
-        self.pdf = FPDF()
-        self.pdf.set_auto_page_break(auto=True, margin=15)
-        self.title = title
+    """
+    Generates a PDF report from violation data.
+    """
+    def __init__(self):
+        self.output_path = os.path.join("app", "reports")
+        os.makedirs(self.output_path, exist_ok=True)
 
-    def header(self):
-        self.pdf.set_font("Arial", 'B', 16)
-        self.pdf.cell(0, 10, self.title, ln=True, align="C")
-        self.pdf.ln(10)
+    def generate(self, violations):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", "B", 16)
+        pdf.cell(0, 10, "PPE Violation Report", 0, 1, 'C')
+        pdf.set_font("Arial", "", 12)
+        pdf.cell(0, 10, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1)
+        pdf.cell(0, 10, f"Total Violations: {len(violations)}", 0, 1)
+        pdf.ln(10)
 
-    def add_violation(self, violation):
-        self.pdf.set_font("Arial", '', 12)
-        self.pdf.cell(0, 10, f"Time: {violation['timestamp']}", ln=True)
-        self.pdf.cell(0, 10, f"Violation: {violation['violation_type']}", ln=True)
-        self.pdf.ln(3)
+        for i, violation in enumerate(violations):
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, f"Violation {i+1}: {violation['violation_type']}", 0, 1)
+            pdf.set_font("Arial", "", 10)
+            pdf.cell(0, 5, f"Timestamp: {violation['timestamp']}", 0, 1)
+            
+            if os.path.exists(violation['image_path']):
+                pdf.image(violation['image_path'], w=60)
+            else:
+                pdf.cell(0, 10, "Image not found.", 0, 1)
+            pdf.ln(5)
 
-        if os.path.exists(violation['image_path']):
-            self.pdf.image(violation['image_path'], w=100)
-        else:
-            self.pdf.cell(0, 10, "Image not found", ln=True)
+        filename = f"violation_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+        filepath = os.path.join(self.output_path, filename)
+        pdf.output(filepath)
+        return filepath
+
+
+class CSVReport:
+    """
+    Generates a CSV report from violation data.
+    """
+    def __init__(self):
+        self.output_path = os.path.join("app", "reports")
+        os.makedirs(self.output_path, exist_ok=True)
+
+    def generate(self, violations):
+        if not violations:
+            return None
+
+        # Prepare data for pandas DataFrame
+        data = {
+            "timestamp": [v["timestamp"] for v in violations],
+            "violation_type": [v["violation_type"] for v in violations],
+            "image_path": [v["image_path"] for v in violations]
+        }
         
-        self.pdf.ln(10)
-
-    def generate(self, violations, save_path="ppe_violation_report.pdf"):
-        self.pdf.add_page()
-        self.header()
-
-        for v in violations:
-            self.add_violation(v)
-
-        self.pdf.output(save_path)
-        return save_path
+        # Create a DataFrame and save to CSV
+        df = pd.DataFrame(data)
+        filename = f"violation_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
+        filepath = os.path.join(self.output_path, filename)
+        df.to_csv(filepath, index=False)
+        return filepath

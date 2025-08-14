@@ -9,6 +9,8 @@ import cv2
 # ✅ Add parent directory to Python path BEFORE importing from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.inference import load_model, predict_image, predict_webcam, get_detection_summary
+from src.report_generator import PDFReport, CSVReport # <-- ADDED CSVReport IMPORT
+from src.violation_logger import ViolationLogger # <-- ADDED VIOLATION LOGGER IMPORT
 
 # 🎨 Premium Page Configuration
 st.set_page_config(
@@ -271,7 +273,7 @@ elif option == "📷 Single Image":
             else:
                 try:
                     img_array = np.array(image.convert("RGB"))
-                    results = model(img_array)
+                    results = model(img_array, device=DEVICE) # <-- MODIFIED LINE
                     # Draw boxes for display
                     result_img = img_array.copy()
                     if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
@@ -331,7 +333,7 @@ elif option == "📁 Batch Processing":
                         
                         # Get detection summary
                         img_array = np.array(image.convert("RGB"))
-                        results = model(img_array)
+                        results = model(img_array, device=DEVICE) # <-- MODIFIED LINE
                         summary = get_detection_summary(results)
                         
                         st.image(result_img, caption=f"Detected - {image_file.name}", use_container_width=True)
@@ -369,15 +371,17 @@ elif option == "📹 Real-time Webcam":
                 if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
                     st.session_state["webcam_active"] = False
                     st.rerun()
+
 # ✅ 📑 Violations Report Section — INSERT THIS
 elif option == "📑 Violations Report":
-    from src.violation_logger import ViolationLogger
-    from src.report_generator import PDFReport
+    # from src.violation_logger import ViolationLogger
+    # from src.report_generator import PDFReport # <-- ALREADY IMPORTED AT THE TOP
+    # from src.report_generator import CSVReport # <-- ALREADY IMPORTED AT THE TOP
 
     st.markdown("""
     <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
         <h2 style="color: white; text-align: center;">📑 Session Violations Report</h2>
-        <p style="color: #ccc; text-align: center;">View all PPE violations detected during this session and export them to PDF.</p>
+        <p style="color: #ccc; text-align: center;">View all PPE violations detected during this session and export them to PDF or CSV.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -397,13 +401,22 @@ elif option == "📑 Violations Report":
                 st.markdown(f"**Type:** {v['violation_type']}  \n**Time:** {v['timestamp']}")
             st.markdown("---")
 
-        col_gen, col_clear = st.columns([1, 1])
-        with col_gen:
+        col_gen_pdf, col_gen_csv, col_clear = st.columns([1, 1, 1]) # <-- MODIFIED COLUMNS
+        with col_gen_pdf:
             if st.button("📄 Generate PDF Report"):
                 pdf = PDFReport()
                 pdf_path = pdf.generate(violations)
                 with open(pdf_path, "rb") as f:
-                    st.download_button("⬇️ Download Report", f, file_name="ppe_violations_report.pdf")
+                    st.download_button("⬇️ Download PDF", f, file_name="ppe_violations_report.pdf")
+
+        # --- ADDED CODE ---
+        with col_gen_csv:
+            if st.button("📊 Generate CSV Report"):
+                csv = CSVReport()
+                csv_path = csv.generate(violations)
+                with open(csv_path, "rb") as f:
+                    st.download_button("⬇️ Download CSV", f, file_name="ppe_violations_report.csv")
+        # --- END OF ADDED CODE ---
 
         with col_clear:
             if st.button("🗑️ Clear Violations"):
@@ -419,4 +432,4 @@ st.markdown("""
     <p>Built with YOLOv8, Streamlit, and Modern Web Technologies</p>
     <p>Portfolio Showcase Project | Professional AI/ML Implementation</p>
 </div>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)
