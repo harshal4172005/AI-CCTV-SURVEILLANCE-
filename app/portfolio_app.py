@@ -11,7 +11,7 @@ from src.report_generator import PDFReport, CSVReport
 
 # ✅ Add parent directory to Python path BEFORE importing from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.inference import load_model, predict_image, predict_webcam, get_detection_summary
+from src.inference import load_model, predict_image, predict_webcam, get_detection_summary, YOLOVideoTransformer
 
 # 🎨 Premium Page Configuration
 st.set_page_config(
@@ -144,19 +144,28 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # 📈 Live Statistics
+    # --- LIVE STATISTICS ---
     st.markdown("""
     <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px;">
         <h4 style="color: white; margin: 0;">📈 Live Statistics</h4>
     </div>
     """, unsafe_allow_html=True)
     
-    # Simulate live stats
+    # Dynamically get stats from the active webcam transformer and logger
+    if "yolo_transformer" in st.session_state and isinstance(st.session_state["yolo_transformer"], YOLOVideoTransformer):
+        images_processed = st.session_state["yolo_transformer"].processed_frames
+    else:
+        images_processed = 0
+
+    if "logger" not in st.session_state:
+        st.session_state["logger"] = ViolationLogger()
+    total_violations = len(st.session_state["logger"].get_violations())
+    
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Images Processed", "1,247", "+12%")
+        st.metric("Images Processed", f"{images_processed}", "+12%") # Replaced static value
     with col2:
-        st.metric("Detection Rate", "94.2%", "+2.1%")
+        st.metric("Violations Logged", f"{total_violations}", "+2.1%") # Replaced Detection Rate with a dynamic metric
     
     # 🔍 Detection Classes Info
     st.markdown("""

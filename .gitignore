@@ -1,3 +1,9 @@
+# Python cache
 __pycache__/
 *.pyc
-app/assets/
+
+# Runtime data
+app/data/violations.json
+
+# Generated reports
+app/reports/

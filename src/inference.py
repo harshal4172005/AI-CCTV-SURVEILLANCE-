@@ -92,9 +92,12 @@ class YOLOVideoTransformer(VideoTransformerBase):
         self.frame_skip = 2
         self.frame_count = 0
         self.last_results = None
+        # Add a new counter for processed frames
+        self.processed_frames = 0
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
+        self.processed_frames += 1
 
         self.frame_count += 1
         if self.frame_count % self.frame_skip == 0 and self.model is not None:
