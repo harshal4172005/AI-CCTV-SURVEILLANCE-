@@ -174,6 +174,31 @@ with st.sidebar:
         else:
             st.markdown(f"🟢 {class_name} (Compliant)")
 
+    # 🚨 Live Violation Log Section
+    st.markdown("---")
+    st.markdown("""
+    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
+        <h4 style="color: white; margin: 0;">🚨 Live Violation Log</h4>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if "logger" not in st.session_state:
+        st.session_state["logger"] = ViolationLogger()
+    
+    violations = st.session_state["logger"].get_violations()
+    total_violations = len(violations)
+    
+    st.markdown(f"**Total Violations:** `{total_violations}`")
+    
+    violation_counts = {}
+    for v in violations:
+        violation_type = v['violation_type']
+        violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
+
+    for v_type, count in violation_counts.items():
+        st.markdown(f"- **{v_type}**: `{count}`")
+
+
 # 📊 Dashboard View
 if option == "📊 Dashboard":
     st.markdown("""
