@@ -325,7 +325,7 @@ elif option == "📷 Single Image":
                     st.session_state["images_processed_count"] += 1
                 except Exception as e:
                     st.warning(f"Detection failed: {e}")
-                    st.image(image, caption="Detected Objects (No Detection)", use_container_width=True)
+                    st.image(image, caption="Detected Objects (No Detection Available)", use_container_width=True)
 
 # 🗂️ Multiple Image Upload with Enhanced UI
 elif option == "📁 Batch Processing":
@@ -417,9 +417,6 @@ elif option == "📑 Violations Report":
         <p style="color: #ccc; text-align: center;">View all PPE violations detected during this session and export them to PDF or CSV.</p>
     </div>
     """, unsafe_allow_html=True)
-
-    if "logger" not in st.session_state:
-        st.session_state["logger"] = ViolationLogger()
 
     violations = st.session_state["logger"].get_violations()
     
