@@ -5,7 +5,7 @@ import os
 
 class PDFReport:
     """
-    Generates a PDF report from violation data.
+    Generates a PDF report from violation data with a summary.
     """
     def __init__(self):
         self.output_path = os.path.join("app", "reports")
@@ -18,8 +18,25 @@ class PDFReport:
         pdf.cell(0, 10, "PPE Violation Report", 0, 1, 'C')
         pdf.set_font("Arial", "", 12)
         pdf.cell(0, 10, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1)
-        pdf.cell(0, 10, f"Total Violations: {len(violations)}", 0, 1)
+        
+        # Add violation summary
+        violation_counts = {}
+        for v in violations:
+            violation_type = v['violation_type']
+            violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
+        
         pdf.ln(10)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 10, f"Total Violations: {len(violations)}", 0, 1)
+        
+        for v_type, count in violation_counts.items():
+            pdf.set_font("Arial", "", 12)
+            pdf.cell(0, 10, f"- {v_type}: {count}", 0, 1)
+
+        pdf.ln(10)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 10, "Violation Details", 0, 1)
+        pdf.ln(5)
 
         for i, violation in enumerate(violations):
             pdf.set_font("Arial", "B", 12)

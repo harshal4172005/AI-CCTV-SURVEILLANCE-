@@ -47,14 +47,12 @@ def log_violations(results, img_array):
                 x1, y1, x2, y2 = map(int, boxes[i])
                 cropped = img_array[y1:y2, x1:x2]
                 
-                # --- MODIFIED CODE ---
                 # Create a subfolder for each violation type
-                violation_folder = os.path.join("app/assets", label)
+                violation_folder = os.path.join("app", "assets", label)
                 os.makedirs(violation_folder, exist_ok=True)
                 
                 filename = f"{uuid.uuid4()}.jpg"
                 save_path = os.path.join(violation_folder, filename)
-                # --- END OF MODIFIED CODE ---
 
                 cv2.imwrite(save_path, cropped)
                 logger.add_violation(save_path, label)
