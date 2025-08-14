@@ -389,7 +389,7 @@ elif option == "📑 Violations Report":
 
     if not violations:
         st.info("✅ No violations recorded yet.")
-    else:
+    else:   
         for i, v in enumerate(violations):
             col1, col2 = st.columns([1, 3])
             with col1:
