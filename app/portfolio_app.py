@@ -11,7 +11,7 @@ from src.report_generator import PDFReport, CSVReport
 
 # ✅ Add parent directory to Python path BEFORE importing from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.inference import load_model, predict_image, predict_webcam, get_detection_summary, YOLOVideoTransformer
+from src.inference import load_model, predict_image, predict_webcam, get_detection_summary, YOLOVideoTransformer, DEVICE
 
 # 🎨 Premium Page Configuration
 st.set_page_config(
@@ -308,6 +308,7 @@ elif option == "📷 Single Image":
             else:
                 try:
                     img_array = np.array(image.convert("RGB"))
+                    # Pass DEVICE to the model call
                     results = model(img_array, device=DEVICE)
                     # Draw boxes for display
                     result_img = img_array.copy()
@@ -368,6 +369,7 @@ elif option == "📁 Batch Processing":
                         
                         # Get detection summary
                         img_array = np.array(image.convert("RGB"))
+                        # Pass DEVICE to the model call
                         results = model(img_array, device=DEVICE)
                         summary = get_detection_summary(results)
                         
