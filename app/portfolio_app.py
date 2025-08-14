@@ -116,6 +116,11 @@ body, .main, .stApp {
 """, unsafe_allow_html=True)
 
 
+# Initialize counters and logger in session state
+if "images_processed_count" not in st.session_state:
+    st.session_state["images_processed_count"] = 0
+if "logger" not in st.session_state:
+    st.session_state["logger"] = ViolationLogger()
 
 # 📊 Model Status with Animation
 @st.cache_resource
@@ -155,17 +160,15 @@ with st.sidebar:
     if "yolo_transformer" in st.session_state and isinstance(st.session_state["yolo_transformer"], YOLOVideoTransformer):
         images_processed = st.session_state["yolo_transformer"].processed_frames
     else:
-        images_processed = 0
+        images_processed = st.session_state["images_processed_count"]
 
-    if "logger" not in st.session_state:
-        st.session_state["logger"] = ViolationLogger()
     total_violations = len(st.session_state["logger"].get_violations())
     
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Images Processed", f"{images_processed}", "+12%") # Replaced static value
+        st.metric("Images Processed", f"{images_processed}", "+12%")
     with col2:
-        st.metric("Violations Logged", f"{total_violations}", "+2.1%") # Replaced Detection Rate with a dynamic metric
+        st.metric("Violations Logged", f"{total_violations}", "+2.1%")
     
     # 🔍 Detection Classes Info
     st.markdown("""
@@ -190,9 +193,6 @@ with st.sidebar:
         <h4 style="color: white; margin: 0;">🚨 Live Violation Log</h4>
     </div>
     """, unsafe_allow_html=True)
-    
-    if "logger" not in st.session_state:
-        st.session_state["logger"] = ViolationLogger()
     
     violations = st.session_state["logger"].get_violations()
     total_violations = len(violations)
@@ -323,6 +323,8 @@ elif option == "📷 Single Image":
                             cv2.rectangle(result_img, (x1, y1), (x2, y2), color, 2)
                             cv2.putText(result_img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
                     st.image(result_img, caption="Detected Objects", use_container_width=True)
+                    # Increment the counter after processing a single image
+                    st.session_state["images_processed_count"] += 1
                 except Exception as e:
                     st.warning(f"Detection failed: {e}")
                     st.image(image, caption="Detected Objects (No Detection)", use_container_width=True)
@@ -377,6 +379,8 @@ elif option == "📁 Batch Processing":
                         st.markdown(f"**📊 Summary:** {summary}")
             
             st.markdown("---")
+            # Increment the counter for each image in the batch
+            st.session_state["images_processed_count"] += 1
         
         status_text.text("✅ Batch processing completed!")
         st.success(f"Successfully processed {len(image_files)} images!")
