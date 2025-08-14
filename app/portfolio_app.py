@@ -308,7 +308,6 @@ elif option == "📷 Single Image":
             else:
                 try:
                     img_array = np.array(image.convert("RGB"))
-                    # Pass DEVICE to the model call
                     results = model(img_array, device=DEVICE)
                     # Draw boxes for display
                     result_img = img_array.copy()
@@ -323,7 +322,6 @@ elif option == "📷 Single Image":
                             cv2.rectangle(result_img, (x1, y1), (x2, y2), color, 2)
                             cv2.putText(result_img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
                     st.image(result_img, caption="Detected Objects", use_container_width=True)
-                    # Increment the counter after processing a single image
                     st.session_state["images_processed_count"] += 1
                 except Exception as e:
                     st.warning(f"Detection failed: {e}")
@@ -371,7 +369,6 @@ elif option == "📁 Batch Processing":
                         
                         # Get detection summary
                         img_array = np.array(image.convert("RGB"))
-                        # Pass DEVICE to the model call
                         results = model(img_array, device=DEVICE)
                         summary = get_detection_summary(results)
                         
@@ -379,7 +376,6 @@ elif option == "📁 Batch Processing":
                         st.markdown(f"**📊 Summary:** {summary}")
             
             st.markdown("---")
-            # Increment the counter for each image in the batch
             st.session_state["images_processed_count"] += 1
         
         status_text.text("✅ Batch processing completed!")
