@@ -92,7 +92,6 @@ class YOLOVideoTransformer(VideoTransformerBase):
         self.frame_skip = 2
         self.frame_count = 0
         self.last_results = None
-        # Add a new counter for processed frames
         self.processed_frames = 0
 
     def recv(self, frame):
@@ -152,7 +151,7 @@ def get_detection_summary(results):
     for i, box in enumerate(result.boxes.xyxy):
         if hasattr(result.boxes, 'cls') and len(result.boxes.cls) > i:
             cls_id = int(result.boxes.cls[i])
-            class_name = CLASS_NAMES[cls_id] if cls_id < len(CLASS_NAMES) else f"Class_{cls_id}"
+            class_name = CLASS_NAMES[cls_id] if cls_id < len(CLASS_NAMES) else str(cls_id)
             detections[class_name] = detections.get(class_name, 0) + 1
     
     summary = []

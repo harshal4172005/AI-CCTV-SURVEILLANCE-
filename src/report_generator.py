@@ -68,14 +68,12 @@ class CSVReport:
         if not violations:
             return None
 
-        # Prepare data for pandas DataFrame
         data = {
             "timestamp": [v["timestamp"] for v in violations],
             "violation_type": [v["violation_type"] for v in violations],
             "image_path": [v["image_path"] for v in violations]
         }
         
-        # Create a DataFrame and save to CSV
         df = pd.DataFrame(data)
         filename = f"violation_report_{datetime.now().strftime('%Y%m%d%H%M%S')}.csv"
         filepath = os.path.join(self.output_path, filename)

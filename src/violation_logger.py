@@ -32,7 +32,7 @@ class ViolationLogger:
             "image_path": image_path
         }
         self.violations.append(violation_entry)
-        self._save_data() # Save the new data
+        self._save_data()
 
     def get_violations(self):
         """Returns the list of all logged violations."""
@@ -41,4 +41,4 @@ class ViolationLogger:
     def clear(self):
         """Clears all violation data."""
         self.violations = []
-        self._save_data() # Clear the data from the file
+        self._save_data()
