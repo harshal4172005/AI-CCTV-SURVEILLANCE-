@@ -28,10 +28,17 @@ def load_model(model_path):
     st.info(f"✅ Attempting to load model on device: {DEVICE}")
 
     try:
-        # Load a smaller, faster YOLOv8 model for better real-time performance.
-        # yolov8n.pt (nano) is a good starting point.
-        model = YOLO('yolov8n.pt') 
-        st.success(f"✅ Model loaded successfully from {model_path} on device: {DEVICE}")
+        # Check if the specified model path exists
+        if os.path.exists(model_path):
+            # Load the custom trained model
+            model = YOLO(model_path)
+            st.success(f"✅ Model loaded successfully from {model_path} on device: {DEVICE}")
+        else:
+            # Fallback to default model if custom model doesn't exist
+            st.warning(f"⚠️ Custom model not found at {model_path}, using default YOLOv8 model")
+            model = YOLO('yolov8n.pt')
+            st.info("ℹ️ Note: Default model may not detect PPE violations properly")
+        
         return model
     except Exception as e:
         st.error(f"❌ Error loading model: {e}")
@@ -69,7 +76,9 @@ def predict_image(model, image):
     """
     try:
         img_array = np.array(image.convert("RGB"))
-        results = model(img_array, device=DEVICE)
+        
+        # Use lower confidence threshold for better detection
+        results = model(img_array, device=DEVICE, conf=0.25, iou=0.45)
         log_violations(results, img_array)
 
         # Draw bounding boxes and labels manually
@@ -77,6 +86,13 @@ def predict_image(model, image):
             boxes = results[0].boxes.xyxy.cpu().numpy()
             confs = results[0].boxes.conf.cpu().numpy()
             clss = results[0].boxes.cls.cpu().numpy().astype(int)
+            
+            # Debug: Print all detections
+            print(f"🔍 Found {len(boxes)} detections:")
+            for i, (box, conf, cls) in enumerate(zip(boxes, confs, clss)):
+                label = model.names[cls] if hasattr(model, 'names') and cls < len(model.names) else str(cls)
+                print(f"   {i+1}: {label} (confidence: {conf:.3f})")
+            
             for box, conf, cls in zip(boxes, confs, clss):
                 x1, y1, x2, y2 = map(int, box)
                 label = model.names[cls] if hasattr(model, 'names') and cls < len(model.names) else str(cls)
@@ -85,7 +101,7 @@ def predict_image(model, image):
                 cv2.putText(img_array, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
             return img_array
         else:
-            st.warning("⚠️ No detections found in the image.")
+            st.warning("⚠️ No detections found in the image. Try lowering the confidence threshold.")
             return img_array
     except Exception as e:
         st.error(f"❌ Error during prediction: {e}")

@@ -636,6 +636,29 @@ elif st.session_state.selected_nav == "single_image":
     </div>
     """, unsafe_allow_html=True)
     
+    # Confidence threshold slider
+    confidence_threshold = st.slider(
+        "Detection Confidence Threshold", 
+        min_value=0.1, 
+        max_value=0.9, 
+        value=0.25, 
+        step=0.05,
+        help="Lower values detect more objects but may include false positives. Higher values are more strict."
+    )
+    
+    # Information about what the model detects
+    st.info("""
+    🎯 **What this model detects:**
+    - **Compliant PPE**: Hardhat, Mask, Safety Vest, Safety Cone
+    - **Violations**: NO-Hardhat, NO-Mask, NO-Safety Vest  
+    - **Other**: Person, machinery, vehicle
+    
+    💡 **Tips for better detection:**
+    - Use clear, well-lit images
+    - Ensure the person is clearly visible
+    - Try adjusting the confidence threshold if no detections are found
+    """)
+    
     image_file = st.file_uploader("Upload an image for analysis", 
                                  type=["jpg", "jpeg", "png"], 
                                  help="Upload a single image to detect PPE and safety violations")
@@ -652,19 +675,32 @@ elif st.session_state.selected_nav == "single_image":
             else:
                 try:
                     img_array = np.array(image.convert("RGB"))
-                    results = model(img_array, device=DEVICE)
+                    # Use user-defined confidence threshold
+                    results = model(img_array, device=DEVICE, conf=confidence_threshold, iou=0.45)
                     # Draw boxes for display
                     result_img = img_array.copy()
                     if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
                         boxes = results[0].boxes.xyxy.cpu().numpy()
                         confs = results[0].boxes.conf.cpu().numpy()
                         clss = results[0].boxes.cls.cpu().numpy().astype(int)
+                        
+                        # Show detection summary
+                        detection_summary = []
+                        for box, conf, cls in zip(boxes, confs, clss):
+                            label = model.names[cls] if hasattr(model, 'names') and cls < len(model.names) else str(cls)
+                            detection_summary.append(f"{label} ({conf:.2f})")
+                        
+                        if detection_summary:
+                            st.success(f"🔍 Detected: {', '.join(detection_summary)}")
+                        
                         for box, conf, cls in zip(boxes, confs, clss):
                             x1, y1, x2, y2 = map(int, box)
                             label = model.names[cls] if hasattr(model, 'names') and cls < len(model.names) else str(cls)
                             color = (0, 255, 0) if 'NO-' not in label else (0, 0, 255)
                             cv2.rectangle(result_img, (x1, y1), (x2, y2), color, 2)
                             cv2.putText(result_img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                    else:
+                        st.warning("⚠️ No PPE violations detected. The person appears to be wearing proper safety equipment.")
                     st.image(result_img, caption="Detected Objects", use_container_width=True)
                     st.session_state["images_processed_count"] += 1
                 except Exception as e:
