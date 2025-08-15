@@ -587,29 +587,20 @@ with st.sidebar:
         else:
             st.markdown(f"🟢 **{class_name}** (Compliant)")
 
-    # Live Violation Log Section
+    # Live Statistics Summary
     st.markdown("---")
     st.markdown("""
     <div class="section-header">
-        <h3 class="section-title">🚨 Live Violation Log</h3>
+        <h3 class="section-title">📊 Quick Stats</h3>
     </div>
     """, unsafe_allow_html=True)
     
     violations = st.session_state["logger"].get_violations()
     total_violations = len(violations)
-    
-    # Show recent violations count
     recent_violations = st.session_state.get("last_violation_count", 0)
+    
     st.markdown(f"**Total Violations:** `{total_violations}`")
     st.markdown(f"**Recent Detections:** `{recent_violations}`")
-    
-    violation_counts = {}
-    for v in violations:
-        violation_type = v['violation_type']
-        violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
-
-    for v_type, count in violation_counts.items():
-        st.markdown(f"- **{v_type}**: `{count}`")
 
 
 # 📊 Dashboard View
@@ -674,23 +665,20 @@ if st.session_state.selected_nav == "dashboard":
     # Chart Section
     st.markdown("### 📈 Real-time Violation Analysis")
     
-    # Create sample data if no violations exist (for demonstration)
+    # Always show the chart - create data if none exists
     if not chart_data['Violation Type']:
         # Create sample data for demonstration
-        sample_data = {
+        chart_data = {
             'Violation Type': ['NO-Hardhat', 'NO-Mask', 'NO-Safety Vest'],
             'Count': [0, 0, 0]
         }
-        fig = px.bar(sample_data, x='Violation Type', y='Count',
-                     title="Real-time Violation Analysis",
-                     color='Count',
-                     color_continuous_scale='viridis')
         st.info("No violations logged yet. Start a session to see real-time data.")
-    else:
-        fig = px.bar(chart_data, x='Violation Type', y='Count',
-                     title="Real-time Violation Analysis",
-                     color='Count',
-                     color_continuous_scale='viridis')
+    
+    # Create the chart
+    fig = px.bar(chart_data, x='Violation Type', y='Count',
+                 title="Real-time Violation Analysis",
+                 color='Count',
+                 color_continuous_scale='viridis')
     
     # Update chart styling
     fig.update_layout(
