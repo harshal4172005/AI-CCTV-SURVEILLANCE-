@@ -572,11 +572,6 @@ if st.session_state.selected_nav == "dashboard":
     </div>
     """, unsafe_allow_html=True)
     
-    # Auto-refresh for real-time updates
-    if st.session_state["auto_refresh"]:
-        time.sleep(0.1)  # Small delay to allow updates
-        st.rerun()
-    
     # Dynamically get violations for the dashboard chart
     violations = st.session_state["logger"].get_violations()
     
@@ -600,7 +595,8 @@ if st.session_state.selected_nav == "dashboard":
     else:
         fps = 0 # Default to 0 if not using webcam
 
-    st.markdown(f"**Performance Metrics**")
+    # Performance Metrics Section
+    st.markdown("### 📊 Performance Metrics")
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Processing Speed (FPS)", f"{fps:.2f}")
@@ -609,9 +605,22 @@ if st.session_state.selected_nav == "dashboard":
     with col3:
         st.metric("Recent Violations", f"{st.session_state['last_violation_count']}")
 
-    # Auto-refresh toggle
-    st.session_state["auto_refresh"] = st.checkbox("🔄 Auto-refresh Dashboard", value=st.session_state["auto_refresh"])
+    # Refresh controls
+    col1, col2, col3 = st.columns([1, 1, 2])
+    with col1:
+        st.session_state["auto_refresh"] = st.checkbox("🔄 Auto-refresh", value=st.session_state["auto_refresh"])
+    with col2:
+        if st.button("🔄 Manual Refresh"):
+            st.rerun()
+    with col3:
+        if st.session_state["auto_refresh"]:
+            st.info("🔄 Auto-refresh enabled - updates every 5 seconds")
+            # Add a small delay and rerun for auto-refresh
+            time.sleep(0.1)
+            st.rerun()
 
+    # Chart Section
+    st.markdown("### 📈 Real-time Violation Analysis")
     if not chart_data['Violation Type']:
         st.info("No violations logged yet. Start a session to see real-time data.")
     else:
@@ -627,6 +636,8 @@ if st.session_state.selected_nav == "dashboard":
         )
         st.plotly_chart(fig, use_container_width=True)
 
+    # Feature Cards Section
+    st.markdown("### 🚀 System Features")
     st.markdown("""
     <div class="feature-grid">
         <div class="feature-card">
@@ -843,6 +854,9 @@ elif st.session_state.selected_nav == "violations_report":
     if not violations:
         st.info("✅ No violations recorded yet.")
     else:
+        # Sort violations by timestamp (newest first)
+        violations.sort(key=lambda x: x['timestamp'], reverse=True)
+        
         # Display violation summary
         violation_counts = {}
         for v in violations:
@@ -855,7 +869,33 @@ elif st.session_state.selected_nav == "violations_report":
         for v_type, count in violation_counts.items():
             st.markdown(f"- **{v_type}**: `{count}` violations")
         
-        st.subheader("📸 Violation Logs")
+        # Action Buttons at the top
+        st.markdown("### 🛠️ Actions")
+        col_gen_pdf, col_gen_csv, col_clear = st.columns([1, 1, 1])
+        with col_gen_pdf:
+            if st.button("📄 Generate PDF Report", key="pdf_btn"):
+                pdf = PDFReport()
+                pdf_path = pdf.generate(violations)
+                with open(pdf_path, "rb") as f:
+                    st.download_button("⬇️ Download PDF", f, file_name="ppe_violations_report.pdf")
+
+        with col_gen_csv:
+            if st.button("📊 Generate CSV Report", key="csv_btn"):
+                csv = CSVReport()
+                csv_path = csv.generate(violations)
+                with open(csv_path, "rb") as f:
+                    st.download_button("⬇️ Download CSV", f, file_name="ppe_violations_report.csv")
+
+        with col_clear:
+            if st.button("🗑️ Clear All Violations", key="clear_btn"):
+                st.session_state["logger"].clear()
+                st.success("✅ All violations cleared successfully!")
+                st.rerun()
+        
+        st.markdown("---")
+        
+        # Violation Logs Section
+        st.subheader("📸 Violation Logs (Newest First)")
 
         for i, v in enumerate(violations):
             col1, col2 = st.columns([1, 3])
@@ -864,27 +904,6 @@ elif st.session_state.selected_nav == "violations_report":
             with col2:
                 st.markdown(f"**Type:** {v['violation_type']}  \n**Time:** {v['timestamp']}")
             st.markdown("---")
-
-        col_gen_pdf, col_gen_csv, col_clear = st.columns([1, 1, 1])
-        with col_gen_pdf:
-            if st.button("📄 Generate PDF Report"):
-                pdf = PDFReport()
-                pdf_path = pdf.generate(violations)
-                with open(pdf_path, "rb") as f:
-                    st.download_button("⬇️ Download PDF", f, file_name="ppe_violations_report.pdf")
-
-        with col_gen_csv:
-            if st.button("📊 Generate CSV Report"):
-                csv = CSVReport()
-                csv_path = csv.generate(violations)
-                with open(csv_path, "rb") as f:
-                    st.download_button("⬇️ Download CSV", f, file_name="ppe_violations_report.csv")
-
-        with col_clear:
-            if st.button("🗑️ Clear Violations"):
-                st.session_state["logger"].clear()
-                st.success("Violations cleared.")
-                st.rerun()
 
 # 📊 Footer with Portfolio Information
 st.markdown("---")
