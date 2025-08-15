@@ -111,6 +111,24 @@ body, .main, .stApp {
 [data-theme="light"] .feature-title { color: var(--text-primary-light); }
 .feature-description { color: var(--text-secondary-dark); line-height: 1.6; }
 [data-theme="light"] .feature-description { color: var(--text-secondary-light); }
+
+/* --- Fancy Radio Button CSS --- */
+.stRadio > label {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+.stRadio > label:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+.stRadio > label[data-baseweb="radio"] div:first-child > div:first-child {
+    background: #4facfe !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
