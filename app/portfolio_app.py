@@ -319,11 +319,44 @@ header { visibility: hidden; }
     font-weight: 600;
     padding: 0.75rem 1.5rem;
     transition: all 0.3s ease;
+    width: 100%;
+    margin: 0.25rem 0;
 }
 
 .stButton > button:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+}
+
+/* Navigation button styling */
+div[data-testid="stButton"] > button {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    color: var(--text-primary);
+    font-weight: 500;
+    padding: 1rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin: 0.25rem 0;
+    text-align: left;
+}
+
+div[data-testid="stButton"] > button:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    color: white;
+}
+
+/* Active navigation button */
+div[data-testid="stButton"] > button[aria-pressed="true"] {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-xl);
 }
 
 /* File uploader styling */
@@ -462,21 +495,40 @@ with st.sidebar:
     if "selected_nav" not in st.session_state:
         st.session_state.selected_nav = "dashboard"
     
-    # Use radio buttons styled as cards
-    nav_labels = [f"{item['icon']} {item['title']}" for item in nav_options]
-    nav_values = [item['key'] for item in nav_options]
-    
-    # Create custom radio button with card styling
-    selected = st.radio(
-        "Navigation",
-        options=nav_values,
-        format_func=lambda x: nav_options[nav_values.index(x)]['title'],
-        index=nav_values.index(st.session_state.selected_nav)
-    )
-    
-    if selected != st.session_state.selected_nav:
-        st.session_state.selected_nav = selected
-        st.rerun()
+    # Create professional navigation buttons
+    for nav_item in nav_options:
+        # Check if this is the currently selected navigation
+        is_active = st.session_state.selected_nav == nav_item['key']
+        
+        # Add visual indicator for active button
+        if is_active:
+            st.markdown(f"""
+            <div style="
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                border: 1px solid var(--primary);
+                border-radius: 12px;
+                padding: 1rem;
+                margin: 0.25rem 0;
+                color: white;
+                font-weight: 600;
+                box-shadow: var(--shadow-xl);
+                text-align: center;
+            ">
+                {nav_item['icon']} {nav_item['title']}
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            # Create button with professional styling
+            if st.button(
+                f"{nav_item['icon']} {nav_item['title']}", 
+                key=f"nav_{nav_item['key']}",
+                help=nav_item['description']
+            ):
+                st.session_state.selected_nav = nav_item['key']
+                st.rerun()
+        
+        # Add some spacing between buttons
+        st.markdown("<br>", unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -621,20 +673,35 @@ if st.session_state.selected_nav == "dashboard":
 
     # Chart Section
     st.markdown("### 📈 Real-time Violation Analysis")
+    
+    # Create sample data if no violations exist (for demonstration)
     if not chart_data['Violation Type']:
+        # Create sample data for demonstration
+        sample_data = {
+            'Violation Type': ['NO-Hardhat', 'NO-Mask', 'NO-Safety Vest'],
+            'Count': [0, 0, 0]
+        }
+        fig = px.bar(sample_data, x='Violation Type', y='Count',
+                     title="Real-time Violation Analysis",
+                     color='Count',
+                     color_continuous_scale='viridis')
         st.info("No violations logged yet. Start a session to see real-time data.")
     else:
         fig = px.bar(chart_data, x='Violation Type', y='Count',
                      title="Real-time Violation Analysis",
                      color='Count',
                      color_continuous_scale='viridis')
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'),
-            title_font_color='white'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    
+    # Update chart styling
+    fig.update_layout(
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'),
+        title_font_color='white',
+        xaxis=dict(gridcolor='rgba(255,255,255,0.1)'),
+        yaxis=dict(gridcolor='rgba(255,255,255,0.1)')
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
     # Feature Cards Section
     st.markdown("### 🚀 System Features")
