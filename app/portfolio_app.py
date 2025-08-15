@@ -111,36 +111,6 @@ body, .main, .stApp {
 [data-theme="light"] .feature-title { color: var(--text-primary-light); }
 .feature-description { color: var(--text-secondary-dark); line-height: 1.6; }
 [data-theme="light"] .feature-description { color: var(--text-secondary-light); }
-/* Custom button-style navigation */
-.st-emotion-cache-12w0qg4 {
-    gap: 0.5rem;
-}
-.st-emotion-cache-12w0qg4 > div:first-child {
-    display: none;
-}
-.custom-radio-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.custom-radio-item {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.2s ease-in-out;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-}
-.custom-radio-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateX(5px);
-}
-.custom-radio-selected {
-    border: 1px solid var(--accent);
-    background: rgba(79, 172, 254, 0.1);
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -152,8 +122,6 @@ if "logger" not in st.session_state:
     st.session_state["logger"] = ViolationLogger()
 if "yolo_transformer" not in st.session_state:
     st.session_state["yolo_transformer"] = None
-if "selected_option" not in st.session_state:
-    st.session_state["selected_option"] = "📊 Dashboard"
 
 
 # 📊 Model Status with Animation
@@ -177,16 +145,9 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    # Custom Radio Button replacement with HTML/CSS
-    options = ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"]
-    
-    st.markdown('<div class="custom-radio-container">', unsafe_allow_html=True)
-    for opt in options:
-        is_selected = "custom-radio-selected" if st.session_state["selected_option"] == opt else ""
-        if st.markdown(f'<div class="custom-radio-item {is_selected}">{opt}</div>', unsafe_allow_html=True):
-            st.session_state["selected_option"] = opt
-            st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    option = st.radio("Select input source:", 
+                     ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"],
+                     index=0)
     
     st.markdown("---")
     
@@ -253,8 +214,7 @@ with st.sidebar:
         st.markdown(f"- **{v_type}**: `{count}`")
 
 
-# Use the selected option to display the correct page content
-option = st.session_state["selected_option"]
+# 📊 Dashboard View
 if option == "📊 Dashboard":
     st.markdown("""
     <div class="hero-section">
