@@ -1,13 +1,12 @@
 import streamlit as st
 import os
 import sys
-from PIL import Image
 import numpy as np
 import plotly.express as px
 import cv2
 from src.violation_logger import ViolationLogger
 from src.report_generator import PDFReport, CSVReport
-
+from PIL import Image
 
 # ✅ Add parent directory to Python path BEFORE importing from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -121,6 +120,9 @@ if "images_processed_count" not in st.session_state:
     st.session_state["images_processed_count"] = 0
 if "logger" not in st.session_state:
     st.session_state["logger"] = ViolationLogger()
+if "yolo_transformer" not in st.session_state:
+    st.session_state["yolo_transformer"] = None
+
 
 # 📊 Model Status with Animation
 @st.cache_resource
@@ -157,10 +159,12 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     # Dynamically get stats from the active webcam transformer and logger
-    if "yolo_transformer" in st.session_state and isinstance(st.session_state["yolo_transformer"], YOLOVideoTransformer):
+    if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
         images_processed = st.session_state["yolo_transformer"].processed_frames
+        fps = st.session_state["yolo_transformer"].fps
     else:
         images_processed = st.session_state["images_processed_count"]
+        fps = 0 # Default to 0 if not using webcam
 
     total_violations = len(st.session_state["logger"].get_violations())
     
@@ -169,6 +173,8 @@ with st.sidebar:
         st.metric("Images Processed", f"{images_processed}", "+12%")
     with col2:
         st.metric("Violations Logged", f"{total_violations}", "+2.1%")
+    
+    st.markdown("---")
     
     # 🔍 Detection Classes Info
     st.markdown("""
@@ -233,7 +239,20 @@ if option == "📊 Dashboard":
         'Violation Type': list(violation_counts.keys()),
         'Count': list(violation_counts.values())
     }
-    
+
+    # Dynamically get FPS
+    if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
+        fps = st.session_state["yolo_transformer"].fps
+    else:
+        fps = 0 # Default to 0 if not using webcam
+
+    st.markdown(f"**Performance Metrics**")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Processing Speed (FPS)", f"{fps:.2f}")
+    with col2:
+        st.metric("Total Violations", f"{len(violations)}")
+
     if not chart_data['Violation Type']:
         st.info("No violations logged yet. Start a session to see real-time data.")
     else:
