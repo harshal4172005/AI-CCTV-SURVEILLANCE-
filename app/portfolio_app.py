@@ -12,148 +12,13 @@ from PIL import Image
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.inference import load_model, predict_image, predict_webcam, get_detection_summary, YOLOVideoTransformer, DEVICE
 
-# 🎨 Premium Page Configuration
+# 🎨 Professional Page Configuration
 st.set_page_config(
     page_title="AI CCTV Surveillance System",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
-
-# 🎨 Premium CSS with Animations
-st.markdown("""
-<style>
-:root {
-    --primary: #667eea;
-    --secondary: #764ba2;
-    --accent: #4facfe;
-    --dark-bg: #0a0e1a;
-    --light-bg: #f5f6fa;
-    --card-bg-dark: rgba(255,255,255,0.03);
-    --card-bg-light: rgba(0,0,0,0.03);
-    --glass-bg-dark: rgba(255,255,255,0.07);
-    --glass-bg-light: rgba(0,0,0,0.07);
-    --text-primary-dark: #fff;
-    --text-primary-light: #23272F;
-    --text-secondary-dark: #b8c5d1;
-    --text-secondary-light: #23272F;
-    --border-color-dark: rgba(255,255,255,0.1);
-    --border-color-light: rgba(0,0,0,0.1);
-    --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.25);
-    --shadow-xl: 0 35px 60px -15px rgba(0,0,0,0.3);
-}
-body, .main, .stApp {
-    background: var(--dark-bg) !important;
-    color: var(--text-primary-dark) !important;
-    font-family: 'Inter', 'JetBrains Mono', sans-serif;
-    transition: background 0.5s, color 0.5s;
-}
-[data-theme="light"] body, [data-theme="light"] .main, [data-theme="light"] .stApp {
-    background: var(--light-bg) !important;
-    color: var(--text-primary-light) !important;
-}
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-.stApp::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: radial-gradient(circle at 20% 20%, var(--primary) 0%, transparent 60%),
-                radial-gradient(circle at 80% 80%, var(--secondary) 0%, transparent 60%),
-                radial-gradient(circle at 40% 60%, var(--accent) 0%, transparent 60%);
-    opacity: 0.08;
-    z-index: -1;
-    pointer-events: none;
-}
-.hero-section { text-align: center; padding: 4rem 0 2rem 0; position: relative; }
-.hero-title {
-    font-size: clamp(3rem, 8vw, 6rem); font-weight: 900;
-    background: linear-gradient(90deg, var(--primary), var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text; margin-bottom: 1rem; line-height: 1.1;
-    animation: slideInUp 1s cubic-bezier(.39,.575,.565,1) both;
-}
-.hero-subtitle {
-    font-size: clamp(1.2rem, 3vw, 1.8rem); color: var(--text-secondary-dark);
-    margin-bottom: 2rem; font-weight: 400;
-    animation: slideInUp 1s cubic-bezier(.39,.575,.565,1) 0.2s both;
-}
-[data-theme="light"] .hero-title { -webkit-text-fill-color: #23272F; }
-[data-theme="light"] .hero-subtitle { color: #23272F; }
-@keyframes slideInUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; margin: 3rem 0; }
-.stat-card {
-    background: var(--card-bg-dark); backdrop-filter: blur(8px); border-radius: 16px;
-    border: 1px solid var(--border-color-dark); padding: 2rem; text-align: center;
-    transition: all 0.3s; position: relative; overflow: hidden;
-    box-shadow: var(--shadow-lg);
-}
-[data-theme="light"] .stat-card { background: var(--card-bg-light); border: 1px solid var(--border-color-light); }
-.stat-card:hover { background: var(--glass-bg-dark); transform: translateY(-8px) scale(1.02); box-shadow: var(--shadow-xl); }
-[data-theme="light"] .stat-card:hover { background: var(--glass-bg-light); }
-.stat-icon { font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(90deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.1);} }
-.stat-value { font-size: 2.5rem; font-weight: 700; color: var(--text-primary-dark); margin-bottom: 0.5rem; }
-[data-theme="light"] .stat-value { color: var(--text-primary-light); }
-.stat-label { color: var(--text-secondary-dark); font-size: 1rem; font-weight: 500; }
-[data-theme="light"] .stat-label { color: var(--text-secondary-light); }
-.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin: 3rem 0; }
-.feature-card {
-    background: var(--card-bg-dark); backdrop-filter: blur(8px); border-radius: 20px;
-    border: 1px solid var(--border-color-dark); padding: 2rem; transition: all 0.3s;
-    position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
-}
-[data-theme="light"] .feature-card { background: var(--card-bg-light); border: 1px solid var(--border-color-light); }
-.feature-card:hover { background: var(--glass-bg-dark); transform: translateY(-10px) scale(1.03); box-shadow: var(--shadow-xl); }
-[data-theme="light"] .feature-card:hover { background: var(--glass-bg-light); }
-.feature-icon { font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(90deg, var(--secondary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.feature-title { font-size: 1.5rem; font-weight: 600; color: var(--text-primary-dark); margin-bottom: 1rem; }
-[data-theme="light"] .feature-title { color: var(--text-primary-light); }
-.feature-description { color: var(--text-secondary-dark); line-height: 1.6; }
-[data-theme="light"] .feature-description { color: var(--text-secondary-light); }
-/* Custom button-style navigation */
-.sidebar-radio-container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.sidebar-radio-item {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.2s ease-in-out;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text-color);
-}
-.sidebar-radio-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateX(5px);
-}
-.sidebar-radio-selected {
-    border: 1px solid var(--accent);
-    background: rgba(79, 172, 254, 0.1);
-    color: var(--accent);
-}
-.stRadio > label {
-    display: none;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# Initialize counters and logger in session state
-if "images_processed_count" not in st.session_state:
-    st.session_state["images_processed_count"] = 0
-if "logger" not in st.session_state:
-    st.session_state["logger"] = ViolationLogger()
-if "yolo_transformer" not in st.session_state:
-    st.session_state["yolo_transformer"] = None
-if "selected_option" not in st.session_state:
-    st.session_state["selected_option"] = "📊 Dashboard"
-
 
 # 📊 Model Status with Animation
 @st.cache_resource
@@ -168,74 +33,56 @@ def load_cached_model():
         return None
 model = load_cached_model()
 
-# 🎛️ Enhanced Sidebar with Premium Design
+# 🎛️ Enhanced Sidebar with Professional Design
 with st.sidebar:
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
-        <h3 style="color: white; margin: 0;">🎛️ Detection Options</h3>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### 🎛️ Detection Options")
     
-    # Custom Radio Button replacement with HTML/CSS
-    options = ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"]
-    icons = ["🧭", "🖼️", "🗂️", "📹", "📄"]
+    option = st.radio("Select input source:", 
+                     ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"],
+                     index=0)
     
-    for i, opt in enumerate(options):
-        is_selected = " sidebar-radio-selected" if st.session_state["selected_option"] == opt else ""
-        if st.markdown(f'<div class="sidebar-radio-item{is_selected}">{icons[i]} {opt}</div>', unsafe_allow_html=True):
-            st.session_state["selected_option"] = opt
-            st.rerun()
-
     st.markdown("---")
     
     # --- LIVE STATISTICS ---
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px;">
-        <h4 style="color: white; margin: 0;">📈 Live Statistics</h4>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### 📈 Live Statistics")
     
-    # Dynamically get stats from the active webcam transformer and logger
+    if "images_processed_count" not in st.session_state:
+        st.session_state["images_processed_count"] = 0
+    if "logger" not in st.session_state:
+        st.session_state["logger"] = ViolationLogger()
+    if "yolo_transformer" not in st.session_state:
+        st.session_state["yolo_transformer"] = None
+
     if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
         images_processed = st.session_state["yolo_transformer"].processed_frames
-        fps = st.session_state["yolo_transformer"].fps
     else:
         images_processed = st.session_state["images_processed_count"]
-        fps = 0 # Default to 0 if not using webcam
 
     total_violations = len(st.session_state["logger"].get_violations())
     
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Images Processed", f"{images_processed}", "+12%")
+        st.metric("Images Processed", f"{images_processed}")
     with col2:
-        st.metric("Violations Logged", f"{total_violations}", "+2.1%")
+        st.metric("Violations Logged", f"{total_violations}")
     
     st.markdown("---")
     
     # 🔍 Detection Classes Info
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
-        <h4 style="color: white; margin: 0;">🔍 Detection Classes</h4>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### 🔍 Detection Classes")
     
     classes = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 
                'Person', 'Safety Cone', 'Safety Vest', 'machinery', 'vehicle']
     
-    for i, class_name in enumerate(classes):
+    for class_name in classes:
         if "NO-" in class_name:
             st.markdown(f"🔴 {class_name} (Violation)")
         else:
             st.markdown(f"🟢 {class_name} (Compliant)")
-
+            
     # 🚨 Live Violation Log Section
     st.markdown("---")
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
-        <h4 style="color: white; margin: 0;">🚨 Live Violation Log</h4>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### 🚨 Live Violation Log")
     
     violations = st.session_state["logger"].get_violations()
     total_violations = len(violations)
@@ -250,94 +97,35 @@ with st.sidebar:
     for v_type, count in violation_counts.items():
         st.markdown(f"- **{v_type}**: `{count}`")
 
-
-# Use the selected option to display the correct page content
-option = st.session_state["selected_option"]
+# 📊 Dashboard View
 if option == "📊 Dashboard":
-    st.markdown("""
-    <div class="hero-section">
-        <h1 class="hero-title">AI CCTV Surveillance System</h1>
-        <p class="hero-subtitle">
-            Advanced PPE Detection for Construction Site Safety<br>
-            Portfolio-Ready | Real-Time | Professional UI/UX
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Dynamically get violations for the dashboard chart
+    st.markdown("<h1>AI CCTV Surveillance System</h1>", unsafe_allow_html=True)
+    st.markdown("<h4>Advanced PPE Detection for Construction Site Safety</h4>", unsafe_allow_html=True)
+
     violations = st.session_state["logger"].get_violations()
     
-    # Create a DataFrame for the chart data
-    violation_counts = {}
-    for v in violations:
-        violation_type = v['violation_type']
-        violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
-
-    chart_data = {
-        'Violation Type': list(violation_counts.keys()),
-        'Count': list(violation_counts.values())
-    }
-
-    # Dynamically get FPS
-    if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
-        fps = st.session_state["yolo_transformer"].fps
-    else:
-        fps = 0 # Default to 0 if not using webcam
-
-    st.markdown(f"**Performance Metrics**")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Processing Speed (FPS)", f"{fps:.2f}")
-    with col2:
-        st.metric("Total Violations", f"{len(violations)}")
-
-    if not chart_data['Violation Type']:
+    if not violations:
         st.info("No violations logged yet. Start a session to see real-time data.")
     else:
+        violation_counts = {}
+        for v in violations:
+            violation_type = v['violation_type']
+            violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
+
+        chart_data = {
+            'Violation Type': list(violation_counts.keys()),
+            'Count': list(violation_counts.values())
+        }
+
         fig = px.bar(chart_data, x='Violation Type', y='Count',
                      title="Real-time Violation Analysis",
                      color='Count',
                      color_continuous_scale='viridis')
-        fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(color='white'),
-            title_font_color='white'
-        )
         st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("""
-    <div class="feature-grid">
-        <div class="feature-card">
-            <div class="feature-icon">⚡</div>
-            <div class="feature-title">Real-Time Detection</div>
-            <div class="feature-description">Instant PPE and safety violation detection using YOLOv8.</div>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <div class="feature-title">Live Analytics</div>
-            <div class="feature-description">Animated charts and statistics for system performance.</div>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🎨</div>
-            <div class="feature-title">Premium UI/UX</div>
-            <div class="feature-description">Modern, responsive, and animated interface for portfolio showcase.</div>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <div class="feature-title">Multi-Class Detection</div>
-            <div class="feature-description">Detects hardhats, masks, vests, people, vehicles, and more.</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
 
 # 📷 Single Image Upload with Enhanced UI
 elif option == "📷 Single Image":
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📷 Single Image Detection</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h2>📷 Single Image Detection</h2>", unsafe_allow_html=True)
     
     image_file = st.file_uploader("Upload an image for analysis", 
                                  type=["jpg", "jpeg", "png"], 
@@ -356,7 +144,6 @@ elif option == "📷 Single Image":
                 try:
                     img_array = np.array(image.convert("RGB"))
                     results = model(img_array, device=DEVICE)
-                    # Draw boxes for display
                     result_img = img_array.copy()
                     if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
                         boxes = results[0].boxes.xyxy.cpu().numpy()
@@ -376,11 +163,7 @@ elif option == "📷 Single Image":
 
 # 🗂️ Multiple Image Upload with Enhanced UI
 elif option == "📁 Batch Processing":
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📁 Batch Image Processing</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h2>📁 Batch Image Processing</h2>", unsafe_allow_html=True)
     
     image_files = st.file_uploader("Upload multiple images for batch analysis", 
                                   type=["jpg", "jpeg", "png"], 
@@ -390,7 +173,6 @@ elif option == "📁 Batch Processing":
     if image_files:
         st.info(f"📁 Processing {len(image_files)} images...")
         
-        # Progress bar
         progress_bar = st.progress(0)
         status_text = st.empty()
         
@@ -414,7 +196,6 @@ elif option == "📁 Batch Processing":
                     with st.spinner(f"🔍 Processing {image_file.name}..."):
                         result_img = predict_image(model, image)
                         
-                        # Get detection summary
                         img_array = np.array(image.convert("RGB"))
                         results = model(img_array, device=DEVICE)
                         summary = get_detection_summary(results)
@@ -430,47 +211,36 @@ elif option == "📁 Batch Processing":
 
 # 🖥️ Webcam Mode with Enhanced UI
 elif option == "📹 Real-time Webcam":
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📹 Real-time Webcam Detection</h2>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown("<h2>📹 Real-time Webcam Detection</h2>", unsafe_allow_html=True)
     st.info("🎥 Click 'Start Webcam Detection' to begin. Click 'Stop' to end.")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if "webcam_active" not in st.session_state:
+
+    if "webcam_active" not in st.session_state:
+        st.session_state["webcam_active"] = False
+
+    if not st.session_state["webcam_active"]:
+        if st.button("🎥 Start Webcam Detection", key="start_webcam_portfolio"):
+            st.session_state["webcam_active"] = True
+
+    if st.session_state["webcam_active"]:
+        if model is None:
+            st.error("Model not loaded. Please ensure app/models/best.pt exists and is valid.")
             st.session_state["webcam_active"] = False
-
-        if not st.session_state["webcam_active"]:
-            if st.button("🎥 Start Webcam Detection", key="start_webcam_portfolio"):
-                st.session_state["webcam_active"] = True
-
-        if st.session_state["webcam_active"]:
-            if model is None:
-                st.error("Model not loaded. Please ensure app/models/best.pt exists and is valid.")
+        else:
+            predict_webcam(model)
+            if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
                 st.session_state["webcam_active"] = False
-            else:
-                predict_webcam(model)
-                if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
-                    st.session_state["webcam_active"] = False
-                    st.rerun()
+                st.rerun()
 
 # 📑 Violations Report Section
 elif option == "📑 Violations Report":
-    st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📑 Session Violations Report</h2>
-        <p style="color: #ccc; text-align: center;">View all PPE violations detected during this session and export them to PDF or CSV.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h2>📑 Session Violations Report</h2>", unsafe_allow_html=True)
+    st.markdown("<p>View all PPE violations detected during this session and export them to PDF or CSV.</p>", unsafe_allow_html=True)
 
     violations = st.session_state["logger"].get_violations()
     
     if not violations:
         st.info("✅ No violations recorded yet.")
     else:
-        # Display violation summary
         violation_counts = {}
         for v in violations:
             violation_type = v['violation_type']
