@@ -93,6 +93,8 @@ class YOLOVideoTransformer(VideoTransformerBase):
         self.frame_count = 0
         self.last_results = None
         self.processed_frames = 0
+        self.start_time = time.time()
+        self.fps = 0
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -103,6 +105,13 @@ class YOLOVideoTransformer(VideoTransformerBase):
             results = self.model(img, device=DEVICE, verbose=False)
             self.last_results = results
             log_violations(results, img)
+            
+            # Calculate FPS
+            end_time = time.time()
+            if (end_time - self.start_time) > 1:
+                self.fps = self.processed_frames / (end_time - self.start_time)
+                self.processed_frames = 0
+                self.start_time = end_time
 
         if self.last_results is not None:
             results = self.last_results
@@ -116,6 +125,9 @@ class YOLOVideoTransformer(VideoTransformerBase):
                     color = (0, 255, 0) if 'NO-' not in label else (0, 0, 255)
                     cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
                     cv2.putText(img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+        
+        # Display FPS on the frame
+        cv2.putText(img, f'FPS: {self.fps:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         return VideoFrame.from_ndarray(img, format="bgr24")
 

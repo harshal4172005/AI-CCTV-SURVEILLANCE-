@@ -219,46 +219,36 @@ if option == "📊 Dashboard":
         </p>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("""
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">🖼️</div>
-            <div class="stat-value">2,600+</div>
-            <div class="stat-label">Training Images</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🔍</div>
-            <div class="stat-value">10</div>
-            <div class="stat-label">Detection Classes</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">⚡</div>
-            <div class="stat-value">94.2%</div>
-            <div class="stat-label">Accuracy Rate</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🚀</div>
-            <div class="stat-value">60 FPS</div>
-            <div class="stat-label">Processing Speed</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    performance_data = {
-        'Class': ['Hardhat', 'Mask', 'Safety Vest', 'Person', 'Vehicle'],
-        'Accuracy': [96.5, 94.2, 92.8, 89.5, 87.3],
-        'Speed': [45, 52, 38, 61, 42]
+    
+    # Dynamically get violations for the dashboard chart
+    violations = st.session_state["logger"].get_violations()
+    
+    # Create a DataFrame for the chart data
+    violation_counts = {}
+    for v in violations:
+        violation_type = v['violation_type']
+        violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
+
+    chart_data = {
+        'Violation Type': list(violation_counts.keys()),
+        'Count': list(violation_counts.values())
     }
-    fig = px.bar(performance_data, x='Class', y='Accuracy',
-                 title="Detection Accuracy by Class",
-                 color='Accuracy',
-                 color_continuous_scale='viridis')
-    fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white'),
-        title_font_color='white'
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    
+    if not chart_data['Violation Type']:
+        st.info("No violations logged yet. Start a session to see real-time data.")
+    else:
+        fig = px.bar(chart_data, x='Violation Type', y='Count',
+                     title="Real-time Violation Analysis",
+                     color='Count',
+                     color_continuous_scale='viridis')
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='white'),
+            title_font_color='white'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
     st.markdown("""
     <div class="feature-grid">
         <div class="feature-card">
@@ -325,7 +315,7 @@ elif option == "📷 Single Image":
                     st.session_state["images_processed_count"] += 1
                 except Exception as e:
                     st.warning(f"Detection failed: {e}")
-                    st.image(image, caption="Detected Objects (No Detection)", use_container_width=True)
+                    st.image(image, caption="Detected Objects (No Detection Available)", use_container_width=True)
 
 # 🗂️ Multiple Image Upload with Enhanced UI
 elif option == "📁 Batch Processing":
@@ -417,9 +407,6 @@ elif option == "📑 Violations Report":
         <p style="color: #ccc; text-align: center;">View all PPE violations detected during this session and export them to PDF or CSV.</p>
     </div>
     """, unsafe_allow_html=True)
-
-    if "logger" not in st.session_state:
-        st.session_state["logger"] = ViolationLogger()
 
     violations = st.session_state["logger"].get_violations()
     
