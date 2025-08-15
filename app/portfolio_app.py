@@ -137,6 +137,9 @@ body, .main, .stApp {
     background: rgba(79, 172, 254, 0.1);
     color: var(--accent);
 }
+.stRadio > label {
+    display: none;
+}
 </style>
 """, unsafe_allow_html=True)
 
