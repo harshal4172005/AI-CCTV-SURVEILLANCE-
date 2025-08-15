@@ -17,100 +17,328 @@ st.set_page_config(
     page_title="AI CCTV Surveillance System",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# 🎨 Premium CSS with Animations
+# 🎨 Premium CSS with Modern Design
 st.markdown("""
 <style>
 :root {
-    --primary: #667eea;
-    --secondary: #764ba2;
-    --accent: #4facfe;
-    --dark-bg: #0a0e1a;
-    --light-bg: #f5f6fa;
-    --card-bg-dark: rgba(255,255,255,0.03);
-    --card-bg-light: rgba(0,0,0,0.03);
-    --glass-bg-dark: rgba(255,255,255,0.07);
-    --glass-bg-light: rgba(0,0,0,0.07);
-    --text-primary-dark: #fff;
-    --text-primary-light: #23272F;
-    --text-secondary-dark: #b8c5d1;
-    --text-secondary-light: #23272F;
-    --border-color-dark: rgba(255,255,255,0.1);
-    --border-color-light: rgba(0,0,0,0.1);
-    --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.25);
-    --shadow-xl: 0 35px 60px -15px rgba(0,0,0,0.3);
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary: #7c3aed;
+    --accent: #06b6d4;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --dark-bg: #0f172a;
+    --dark-card: #1e293b;
+    --dark-border: #334155;
+    --light-bg: #f8fafc;
+    --light-card: #ffffff;
+    --light-border: #e2e8f0;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
+
 body, .main, .stApp {
     background: var(--dark-bg) !important;
-    color: var(--text-primary-dark) !important;
-    font-family: 'Inter', 'JetBrains Mono', sans-serif;
-    transition: background 0.5s, color 0.5s;
+    color: var(--text-primary) !important;
+    font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: all 0.3s ease;
 }
+
 [data-theme="light"] body, [data-theme="light"] .main, [data-theme="light"] .stApp {
     background: var(--light-bg) !important;
-    color: var(--text-primary-light) !important;
+    color: #1e293b !important;
 }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+/* Hide Streamlit default elements */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--dark-card); }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-dark); }
+
+/* Background gradient */
 .stApp::before {
     content: '';
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: radial-gradient(circle at 20% 20%, var(--primary) 0%, transparent 60%),
-                radial-gradient(circle at 80% 80%, var(--secondary) 0%, transparent 60%),
-                radial-gradient(circle at 40% 60%, var(--accent) 0%, transparent 60%);
-    opacity: 0.08;
+    background: 
+        radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
     z-index: -1;
     pointer-events: none;
 }
-.hero-section { text-align: center; padding: 4rem 0 2rem 0; position: relative; }
-.hero-title {
-    font-size: clamp(3rem, 8vw, 6rem); font-weight: 900;
-    background: linear-gradient(90deg, var(--primary), var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text; margin-bottom: 1rem; line-height: 1.1;
-    animation: slideInUp 1s cubic-bezier(.39,.575,.565,1) both;
+
+/* Sidebar styling */
+.sidebar .sidebar-content {
+    background: var(--dark-card) !important;
+    border-right: 1px solid var(--dark-border) !important;
 }
-.hero-subtitle {
-    font-size: clamp(1.2rem, 3vw, 1.8rem); color: var(--text-secondary-dark);
-    margin-bottom: 2rem; font-weight: 400;
-    animation: slideInUp 1s cubic-bezier(.39,.575,.565,1) 0.2s both;
+
+/* Navigation cards */
+.nav-card {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
-[data-theme="light"] .hero-title { -webkit-text-fill-color: #23272F; }
-[data-theme="light"] .hero-subtitle { color: #23272F; }
-@keyframes slideInUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; margin: 3rem 0; }
-.stat-card {
-    background: var(--card-bg-dark); backdrop-filter: blur(8px); border-radius: 16px;
-    border: 1px solid var(--border-color-dark); padding: 2rem; text-align: center;
-    transition: all 0.3s; position: relative; overflow: hidden;
+
+.nav-card:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
 }
-[data-theme="light"] .stat-card { background: var(--card-bg-light); border: 1px solid var(--border-color-light); }
-.stat-card:hover { background: var(--glass-bg-dark); transform: translateY(-8px) scale(1.02); box-shadow: var(--shadow-xl); }
-[data-theme="light"] .stat-card:hover { background: var(--glass-bg-light); }
-.stat-icon { font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(90deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.1);} }
-.stat-value { font-size: 2.5rem; font-weight: 700; color: var(--text-primary-dark); margin-bottom: 0.5rem; }
-[data-theme="light"] .stat-value { color: var(--text-primary-light); }
-.stat-label { color: var(--text-secondary-dark); font-size: 1rem; font-weight: 500; }
-[data-theme="light"] .stat-label { color: var(--text-secondary-light); }
-.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin: 3rem 0; }
-.feature-card {
-    background: var(--card-bg-dark); backdrop-filter: blur(8px); border-radius: 20px;
-    border: 1px solid var(--border-color-dark); padding: 2rem; transition: all 0.3s;
-    position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
+
+.nav-card.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: var(--primary);
+    box-shadow: var(--shadow-xl);
 }
-[data-theme="light"] .feature-card { background: var(--card-bg-light); border: 1px solid var(--border-color-light); }
-.feature-card:hover { background: var(--glass-bg-dark); transform: translateY(-10px) scale(1.03); box-shadow: var(--shadow-xl); }
-[data-theme="light"] .feature-card:hover { background: var(--glass-bg-light); }
-.feature-icon { font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(90deg, var(--secondary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.feature-title { font-size: 1.5rem; font-weight: 600; color: var(--text-primary-dark); margin-bottom: 1rem; }
-[data-theme="light"] .feature-title { color: var(--text-primary-light); }
-.feature-description { color: var(--text-secondary-dark); line-height: 1.6; }
-[data-theme="light"] .feature-description { color: var(--text-secondary-light); }
+
+.nav-card-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.nav-card-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.nav-card-description {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 0 0;
+}
+
+/* Stats cards */
+.stats-card {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 0.5rem 0;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stats-change {
+    font-size: 0.75rem;
+    color: var(--success);
+    font-weight: 600;
+}
+
+/* Hero section */
+.hero-section {
+    text-align: center;
+    padding: 3rem 0 2rem 0;
+    position: relative;
+}
+
+.hero-title {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.hero-subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-weight: 400;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Feature cards */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.feature-card {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.feature-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.feature-description {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+/* Status indicators */
+.status-success {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--success);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.status-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--warning);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+/* Section headers */
+.section-header {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+}
+
+/* Animation classes */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Custom button styling */
+.stButton > button {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* File uploader styling */
+.stFileUploader {
+    background: var(--dark-card);
+    border: 2px dashed var(--dark-border);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stFileUploader:hover {
+    border-color: var(--primary);
+    background: rgba(37, 99, 235, 0.05);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -137,24 +365,94 @@ def load_cached_model():
         return None
 model = load_cached_model()
 
-# 🎛️ Enhanced Sidebar with Premium Design
-with st.sidebar:
+# Model Status Indicator
+if model is not None:
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
-        <h3 style="color: white; margin: 0;">🎛️ Detection Options</h3>
+    <div class="status-success">
+        <strong>✅ Model loaded successfully</strong><br>
+        <small>Path: app/models/best.pt | Device: CPU</small>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div class="status-warning">
+        <strong>⚠️ Model not loaded</strong><br>
+        <small>Please ensure app/models/best.pt exists and is valid</small>
+    </div>
+    """, unsafe_allow_html=True)
+
+# 🎛️ Modern Sidebar with Card Navigation
+with st.sidebar:
+    # Navigation Section
+    st.markdown("""
+    <div class="section-header">
+        <h3 class="section-title">🎛️ Navigation</h3>
     </div>
     """, unsafe_allow_html=True)
     
-    option = st.radio("Select input source:", 
-                     ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"],
-                     index=0)
+    # Navigation Cards
+    nav_options = [
+        {
+            "icon": "📊",
+            "title": "Dashboard",
+            "description": "Overview & Analytics",
+            "key": "dashboard"
+        },
+        {
+            "icon": "📷", 
+            "title": "Single Image",
+            "description": "Upload & Analyze",
+            "key": "single_image"
+        },
+        {
+            "icon": "📁",
+            "title": "Batch Processing", 
+            "description": "Multiple Images",
+            "key": "batch_processing"
+        },
+        {
+            "icon": "📹",
+            "title": "Real-time Webcam",
+            "description": "Live Detection",
+            "key": "webcam"
+        },
+        {
+            "icon": "📑",
+            "title": "Violations Report",
+            "description": "Detailed Logs",
+            "key": "violations_report"
+        }
+    ]
+    
+    # Initialize selected option in session state
+    if "selected_nav" not in st.session_state:
+        st.session_state.selected_nav = "dashboard"
+    
+    # Create navigation cards
+    for nav_item in nav_options:
+        is_active = st.session_state.selected_nav == nav_item["key"]
+        active_class = "active" if is_active else ""
+        
+        st.markdown(f"""
+        <div class="nav-card {active_class}" onclick="document.querySelector('[data-nav=\\'{nav_item['key']}\\']').click()">
+            <span class="nav-card-icon">{nav_item['icon']}</span>
+            <h4 class="nav-card-title">{nav_item['title']}</h4>
+            <p class="nav-card-description">{nav_item['description']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Hidden radio button for functionality
+        if st.button(nav_item["title"], key=f"nav_{nav_item['key']}", 
+                    help=nav_item["description"], 
+                    label_visibility="collapsed"):
+            st.session_state.selected_nav = nav_item["key"]
     
     st.markdown("---")
     
-    # --- LIVE STATISTICS ---
+    # Live Statistics Section
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px;">
-        <h4 style="color: white; margin: 0;">📈 Live Statistics</h4>
+    <div class="section-header">
+        <h3 class="section-title">📈 Live Statistics</h3>
     </div>
     """, unsafe_allow_html=True)
     
@@ -168,35 +466,46 @@ with st.sidebar:
 
     total_violations = len(st.session_state["logger"].get_violations())
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Images Processed", f"{images_processed}", "+12%")
-    with col2:
-        st.metric("Violations Logged", f"{total_violations}", "+2.1%")
+    # Stats Cards
+    st.markdown(f"""
+    <div class="stats-card">
+        <div class="stats-value">{images_processed}</div>
+        <div class="stats-label">Images Processed</div>
+        <div class="stats-change">+12%</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+    <div class="stats-card">
+        <div class="stats-value">{total_violations}</div>
+        <div class="stats-label">Violations Logged</div>
+        <div class="stats-change">+2.1%</div>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # 🔍 Detection Classes Info
+    # Detection Classes Section
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
-        <h4 style="color: white; margin: 0;">🔍 Detection Classes</h4>
+    <div class="section-header">
+        <h3 class="section-title">🔍 Detection Classes</h3>
     </div>
     """, unsafe_allow_html=True)
     
     classes = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 
                'Person', 'Safety Cone', 'Safety Vest', 'machinery', 'vehicle']
     
-    for i, class_name in enumerate(classes):
+    for class_name in classes:
         if "NO-" in class_name:
-            st.markdown(f"🔴 {class_name} (Violation)")
+            st.markdown(f"🔴 **{class_name}** (Violation)")
         else:
-            st.markdown(f"🟢 {class_name} (Compliant)")
+            st.markdown(f"🟢 **{class_name}** (Compliant)")
 
-    # 🚨 Live Violation Log Section
+    # Live Violation Log Section
     st.markdown("---")
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 10px; margin-top: 1rem;">
-        <h4 style="color: white; margin: 0;">🚨 Live Violation Log</h4>
+    <div class="section-header">
+        <h3 class="section-title">🚨 Live Violation Log</h3>
     </div>
     """, unsafe_allow_html=True)
     
@@ -215,7 +524,7 @@ with st.sidebar:
 
 
 # 📊 Dashboard View
-if option == "📊 Dashboard":
+if st.session_state.selected_nav == "dashboard":
     st.markdown("""
     <div class="hero-section">
         <h1 class="hero-title">AI CCTV Surveillance System</h1>
@@ -294,10 +603,10 @@ if option == "📊 Dashboard":
     """, unsafe_allow_html=True)
 
 # 📷 Single Image Upload with Enhanced UI
-elif option == "📷 Single Image":
+elif st.session_state.selected_nav == "single_image":
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📷 Single Image Detection</h2>
+    <div class="section-header">
+        <h2 class="section-title">📷 Single Image Detection</h2>
     </div>
     """, unsafe_allow_html=True)
     
@@ -337,10 +646,10 @@ elif option == "📷 Single Image":
                     st.image(image, caption="Detected Objects (No Detection Available)", use_container_width=True)
 
 # 🗂️ Multiple Image Upload with Enhanced UI
-elif option == "📁 Batch Processing":
+elif st.session_state.selected_nav == "batch_processing":
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📁 Batch Image Processing</h2>
+    <div class="section-header">
+        <h2 class="section-title">📁 Batch Image Processing</h2>
     </div>
     """, unsafe_allow_html=True)
     
@@ -391,10 +700,10 @@ elif option == "📁 Batch Processing":
         st.success(f"Successfully processed {len(image_files)} images!")
 
 # 🖥️ Webcam Mode with Enhanced UI
-elif option == "📹 Real-time Webcam":
+elif st.session_state.selected_nav == "webcam":
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📹 Real-time Webcam Detection</h2>
+    <div class="section-header">
+        <h2 class="section-title">📹 Real-time Webcam Detection</h2>
     </div>
     """, unsafe_allow_html=True)
 
@@ -419,11 +728,11 @@ elif option == "📹 Real-time Webcam":
                     st.rerun()
 
 # 📑 Violations Report Section
-elif option == "📑 Violations Report":
+elif st.session_state.selected_nav == "violations_report":
     st.markdown("""
-    <div style="background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; margin: 2rem 0;">
-        <h2 style="color: white; text-align: center;">📑 Session Violations Report</h2>
-        <p style="color: #ccc; text-align: center;">View all PPE violations detected during this session and export them to PDF or CSV.</p>
+    <div class="section-header">
+        <h2 class="section-title">📑 Session Violations Report</h2>
+        <p style="color: var(--text-secondary); text-align: center; margin-top: 0.5rem;">View all PPE violations detected during this session and export them to PDF or CSV.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -478,9 +787,10 @@ elif option == "📑 Violations Report":
 # 📊 Footer with Portfolio Information
 st.markdown("---")
 st.markdown("""
-<div class="footer">
-    <p>🛡️ AI CCTV Surveillance System | Advanced PPE Detection for Construction Site Safety</p>
-    <p>Built with YOLOv8, Streamlit, and Modern Web Technologies</p>
-    <p>Portfolio Showcase Project | Professional AI/ML Implementation</p>
+<div style="background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 2rem; text-align: center; margin-top: 3rem;">
+    <h3 style="color: var(--text-primary); margin-bottom: 1rem;">🛡️ AI CCTV Surveillance System</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Advanced PPE Detection for Construction Site Safety</p>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Built with YOLOv8, Streamlit, and Modern Web Technologies</p>
+    <p style="color: var(--text-muted); font-size: 0.8rem;">Portfolio Showcase Project | Professional AI/ML Implementation</p>
 </div>
 """, unsafe_allow_html=True)
