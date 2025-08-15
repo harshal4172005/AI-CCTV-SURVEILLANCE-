@@ -44,9 +44,16 @@ def load_model(model_path):
         st.error(f"❌ Error loading model: {e}")
         return None
     
-def log_violations(results, img_array):
+def log_violations(results, img_array, violation_cooldown=None):
     logger = ViolationLogger()
     violation_classes = ["NO-Hardhat", "NO-Mask", "NO-Safety Vest"]
+    
+    # Initialize violation cooldown in session state if not exists
+    if violation_cooldown is None:
+        violation_cooldown = {}
+    
+    current_time = time.time()
+    violations_logged = []
 
     if results and len(results) > 0 and hasattr(results[0], 'boxes'):
         boxes = results[0].boxes.xyxy.cpu().numpy()
@@ -56,18 +63,26 @@ def log_violations(results, img_array):
         for i, cls in enumerate(clss):
             label = names[cls] if cls < len(names) else str(cls)
             if label in violation_classes:
-                x1, y1, x2, y2 = map(int, boxes[i])
-                cropped = img_array[y1:y2, x1:x2]
-                
-                # Create a subfolder for each violation type
-                violation_folder = os.path.join("app", "assets", label)
-                os.makedirs(violation_folder, exist_ok=True)
-                
-                filename = f"{uuid.uuid4()}.jpg"
-                save_path = os.path.join(violation_folder, filename)
+                # Check if we've logged this violation type recently (within 5 seconds)
+                if label not in violation_cooldown or (current_time - violation_cooldown[label]) > 5:
+                    x1, y1, x2, y2 = map(int, boxes[i])
+                    cropped = img_array[y1:y2, x1:x2]
+                    
+                    # Create a subfolder for each violation type
+                    violation_folder = os.path.join("app", "assets", label)
+                    os.makedirs(violation_folder, exist_ok=True)
+                    
+                    filename = f"{uuid.uuid4()}.jpg"
+                    save_path = os.path.join(violation_folder, filename)
 
-                cv2.imwrite(save_path, cropped)
-                logger.add_violation(save_path, label)
+                    cv2.imwrite(save_path, cropped)
+                    logger.add_violation(save_path, label)
+                    
+                    # Update cooldown for this violation type
+                    violation_cooldown[label] = current_time
+                    violations_logged.append(label)
+    
+    return violations_logged
 
 
 def predict_image(model, image):
@@ -117,6 +132,8 @@ class YOLOVideoTransformer(VideoTransformerBase):
         self.start_time = time.time()
         self.fps = 0
         self.confidence_threshold = confidence_threshold
+        self.violation_cooldown = {}
+        self.last_violation_count = 0
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -127,7 +144,13 @@ class YOLOVideoTransformer(VideoTransformerBase):
             # Use user-defined confidence threshold
             results = self.model(img, device=DEVICE, conf=self.confidence_threshold, iou=0.45, verbose=False)
             self.last_results = results
-            log_violations(results, img)
+            
+            # Log violations with cooldown
+            violations_logged = log_violations(results, img, self.violation_cooldown)
+            
+            # Update violation count for real-time updates
+            if violations_logged:
+                self.last_violation_count = len(violations_logged)
             
             # Calculate FPS
             end_time = time.time()

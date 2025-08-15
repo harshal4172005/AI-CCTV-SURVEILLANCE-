@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import plotly.express as px
 import cv2
+import time
 from src.violation_logger import ViolationLogger
 from src.report_generator import PDFReport, CSVReport
 from PIL import Image
@@ -379,6 +380,10 @@ if "logger" not in st.session_state:
     st.session_state["logger"] = ViolationLogger()
 if "yolo_transformer" not in st.session_state:
     st.session_state["yolo_transformer"] = None
+if "last_violation_count" not in st.session_state:
+    st.session_state["last_violation_count"] = 0
+if "auto_refresh" not in st.session_state:
+    st.session_state["auto_refresh"] = True
 
 
 # 📊 Model Status with Animation
@@ -486,6 +491,9 @@ with st.sidebar:
     if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
         images_processed = st.session_state["yolo_transformer"].processed_frames
         fps = st.session_state["yolo_transformer"].fps
+        # Update violation count from transformer
+        if hasattr(st.session_state["yolo_transformer"], 'last_violation_count'):
+            st.session_state["last_violation_count"] = st.session_state["yolo_transformer"].last_violation_count
     else:
         images_processed = st.session_state["images_processed_count"]
         fps = 0 # Default to 0 if not using webcam
@@ -538,7 +546,10 @@ with st.sidebar:
     violations = st.session_state["logger"].get_violations()
     total_violations = len(violations)
     
+    # Show recent violations count
+    recent_violations = st.session_state.get("last_violation_count", 0)
     st.markdown(f"**Total Violations:** `{total_violations}`")
+    st.markdown(f"**Recent Detections:** `{recent_violations}`")
     
     violation_counts = {}
     for v in violations:
@@ -561,6 +572,11 @@ if st.session_state.selected_nav == "dashboard":
     </div>
     """, unsafe_allow_html=True)
     
+    # Auto-refresh for real-time updates
+    if st.session_state["auto_refresh"]:
+        time.sleep(0.1)  # Small delay to allow updates
+        st.rerun()
+    
     # Dynamically get violations for the dashboard chart
     violations = st.session_state["logger"].get_violations()
     
@@ -575,18 +591,26 @@ if st.session_state.selected_nav == "dashboard":
         'Count': list(violation_counts.values())
     }
 
-    # Dynamically get FPS
+    # Dynamically get FPS and update from transformer
     if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
         fps = st.session_state["yolo_transformer"].fps
+        # Update violation count from transformer
+        if hasattr(st.session_state["yolo_transformer"], 'last_violation_count'):
+            st.session_state["last_violation_count"] = st.session_state["yolo_transformer"].last_violation_count
     else:
         fps = 0 # Default to 0 if not using webcam
 
     st.markdown(f"**Performance Metrics**")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Processing Speed (FPS)", f"{fps:.2f}")
     with col2:
         st.metric("Total Violations", f"{len(violations)}")
+    with col3:
+        st.metric("Recent Violations", f"{st.session_state['last_violation_count']}")
+
+    # Auto-refresh toggle
+    st.session_state["auto_refresh"] = st.checkbox("🔄 Auto-refresh Dashboard", value=st.session_state["auto_refresh"])
 
     if not chart_data['Violation Type']:
         st.info("No violations logged yet. Start a session to see real-time data.")
@@ -794,6 +818,12 @@ elif st.session_state.selected_nav == "webcam":
                 st.error("Model not loaded. Please ensure app/models/best.pt exists and is valid.")
                 st.session_state["webcam_active"] = False
             else:
+                # Show real-time violation notifications
+                if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'last_violation_count'):
+                    recent_violations = st.session_state["yolo_transformer"].last_violation_count
+                    if recent_violations > 0:
+                        st.success(f"🚨 **Violation Detected!** {recent_violations} new violation(s) logged.")
+                
                 predict_webcam(model, webcam_confidence)
                 if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
                     st.session_state["webcam_active"] = False
