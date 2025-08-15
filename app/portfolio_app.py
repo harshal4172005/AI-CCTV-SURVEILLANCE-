@@ -111,13 +111,19 @@ body, .main, .stApp {
 [data-theme="light"] .feature-title { color: var(--text-primary-light); }
 .feature-description { color: var(--text-secondary-dark); line-height: 1.6; }
 [data-theme="light"] .feature-description { color: var(--text-secondary-light); }
-
-.fancy-radio-container {
+/* Custom button-style navigation */
+.st-emotion-cache-12w0qg4 {
+    gap: 0.5rem;
+}
+.st-emotion-cache-12w0qg4 > div:first-child {
+    display: none;
+}
+.custom-radio-container {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
-.fancy-radio-item {
+.custom-radio-item {
     background: rgba(255, 255, 255, 0.05);
     padding: 15px;
     border-radius: 10px;
@@ -127,11 +133,11 @@ body, .main, .stApp {
     font-size: 1rem;
     font-weight: 500;
 }
-.fancy-radio-item:hover {
+.custom-radio-item:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateX(5px);
 }
-.fancy-radio-selected {
+.custom-radio-selected {
     border: 1px solid var(--accent);
     background: rgba(79, 172, 254, 0.1);
 }
@@ -174,14 +180,14 @@ with st.sidebar:
     # Custom Radio Button replacement with HTML/CSS
     options = ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"]
     
-    st.markdown('<div class="fancy-radio-container">', unsafe_allow_html=True)
+    st.markdown('<div class="custom-radio-container">', unsafe_allow_html=True)
     for opt in options:
-        is_selected = "fancy-radio-selected" if st.session_state["selected_option"] == opt else ""
-        if st.markdown(f'<div class="fancy-radio-item {is_selected}">{opt}</div>', unsafe_allow_html=True):
+        is_selected = "custom-radio-selected" if st.session_state["selected_option"] == opt else ""
+        if st.markdown(f'<div class="custom-radio-item {is_selected}">{opt}</div>', unsafe_allow_html=True):
             st.session_state["selected_option"] = opt
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
-
+    
     st.markdown("---")
     
     # --- LIVE STATISTICS ---
@@ -249,7 +255,6 @@ with st.sidebar:
 
 # Use the selected option to display the correct page content
 option = st.session_state["selected_option"]
-# 📊 Dashboard View
 if option == "📊 Dashboard":
     st.markdown("""
     <div class="hero-section">
