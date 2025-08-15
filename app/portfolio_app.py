@@ -339,6 +339,35 @@ header { visibility: hidden; }
     border-color: var(--primary);
     background: rgba(37, 99, 235, 0.05);
 }
+
+/* Radio button styling to look like cards */
+.stRadio > div {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.stRadio > div:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stRadio > div[data-testid="stRadio"] > div:first-child {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: var(--primary);
+    box-shadow: var(--shadow-xl);
+}
+
+/* Hide radio button labels */
+.stRadio > label {
+    display: none !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -428,24 +457,21 @@ with st.sidebar:
     if "selected_nav" not in st.session_state:
         st.session_state.selected_nav = "dashboard"
     
-    # Create navigation cards
-    for nav_item in nav_options:
-        is_active = st.session_state.selected_nav == nav_item["key"]
-        active_class = "active" if is_active else ""
-        
-        st.markdown(f"""
-        <div class="nav-card {active_class}" onclick="document.querySelector('[data-nav=\\'{nav_item['key']}\\']').click()">
-            <span class="nav-card-icon">{nav_item['icon']}</span>
-            <h4 class="nav-card-title">{nav_item['title']}</h4>
-            <p class="nav-card-description">{nav_item['description']}</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Hidden radio button for functionality
-        if st.button(nav_item["title"], key=f"nav_{nav_item['key']}", 
-                    help=nav_item["description"], 
-                    label_visibility="collapsed"):
-            st.session_state.selected_nav = nav_item["key"]
+    # Use radio buttons styled as cards
+    nav_labels = [f"{item['icon']} {item['title']}" for item in nav_options]
+    nav_values = [item['key'] for item in nav_options]
+    
+    # Create custom radio button with card styling
+    selected = st.radio(
+        "Navigation",
+        options=nav_values,
+        format_func=lambda x: nav_options[nav_values.index(x)]['title'],
+        index=nav_values.index(st.session_state.selected_nav)
+    )
+    
+    if selected != st.session_state.selected_nav:
+        st.session_state.selected_nav = selected
+        st.rerun()
     
     st.markdown("---")
     
