@@ -524,6 +524,11 @@ with st.sidebar:
                 key=f"nav_{nav_item['key']}",
                 help=nav_item['description']
             ):
+                # Stop webcam if it's running when navigating away
+                if st.session_state.selected_nav == "webcam" and st.session_state.get("webcam_active", False):
+                    st.session_state["webcam_active"] = False
+                    st.session_state["yolo_transformer"] = None
+                
                 st.session_state.selected_nav = nav_item['key']
                 st.rerun()
         
@@ -605,6 +610,11 @@ with st.sidebar:
 
 # 📊 Dashboard View
 if st.session_state.selected_nav == "dashboard":
+    # Ensure webcam is stopped when viewing dashboard
+    if st.session_state.get("webcam_active", False):
+        st.session_state["webcam_active"] = False
+        st.session_state["yolo_transformer"] = None
+    
     st.markdown("""
     <div class="hero-section">
         <h1 class="hero-title">AI CCTV Surveillance System</h1>
@@ -893,6 +903,7 @@ elif st.session_state.selected_nav == "webcam":
                 predict_webcam(model, webcam_confidence)
                 if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
                     st.session_state["webcam_active"] = False
+                    st.session_state["yolo_transformer"] = None
                     st.rerun()
 
 # 📑 Violations Report Section
