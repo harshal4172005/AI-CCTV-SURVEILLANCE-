@@ -108,7 +108,7 @@ def predict_image(model, image):
         return np.array(image.convert("RGB"))
 
 class YOLOVideoTransformer(VideoTransformerBase):
-    def __init__(self):
+    def __init__(self, confidence_threshold=0.25):
         self.model = None
         self.frame_skip = 2
         self.frame_count = 0
@@ -116,6 +116,7 @@ class YOLOVideoTransformer(VideoTransformerBase):
         self.processed_frames = 0
         self.start_time = time.time()
         self.fps = 0
+        self.confidence_threshold = confidence_threshold
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -123,7 +124,8 @@ class YOLOVideoTransformer(VideoTransformerBase):
 
         self.frame_count += 1
         if self.frame_count % self.frame_skip == 0 and self.model is not None:
-            results = self.model(img, device=DEVICE, verbose=False)
+            # Use user-defined confidence threshold
+            results = self.model(img, device=DEVICE, conf=self.confidence_threshold, iou=0.45, verbose=False)
             self.last_results = results
             log_violations(results, img)
             
@@ -145,23 +147,30 @@ class YOLOVideoTransformer(VideoTransformerBase):
                     label = self.model.names[cls] if hasattr(self.model, 'names') and cls < len(self.model.names) else str(cls)
                     color = (0, 255, 0) if 'NO-' not in label else (0, 0, 255)
                     cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
-                    cv2.putText(img, f'FPS: {self.fps:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    # Add label text on the bounding box
+                    cv2.putText(img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                
+                # Add FPS display in top-left corner
+                cv2.putText(img, f'FPS: {self.fps:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
         return VideoFrame.from_ndarray(img, format="bgr24")
 
 
-def get_or_create_transformer(model):
+def get_or_create_transformer(model, confidence_threshold=0.25):
     if "yolo_transformer" not in st.session_state or st.session_state["yolo_transformer"] is None:
-        st.session_state["yolo_transformer"] = YOLOVideoTransformer()
+        st.session_state["yolo_transformer"] = YOLOVideoTransformer(confidence_threshold)
+    else:
+        # Update confidence threshold if it changed
+        st.session_state["yolo_transformer"].confidence_threshold = confidence_threshold
     st.session_state["yolo_transformer"].model = model
     return st.session_state["yolo_transformer"]
 
-def predict_webcam(model):
+def predict_webcam(model, confidence_threshold=0.25):
     st.title("Real-time Webcam Detection")
 
     webrtc_streamer(
         key="yolo-webcam",
-        video_transformer_factory=lambda: get_or_create_transformer(model),
+        video_transformer_factory=lambda: get_or_create_transformer(model, confidence_threshold),
         media_stream_constraints={"video": {"width": 640, "height": 480, "frameRate": 15}, "audio": False},
         async_transform=True,
     )

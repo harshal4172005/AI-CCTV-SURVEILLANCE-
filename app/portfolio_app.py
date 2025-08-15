@@ -769,6 +769,16 @@ elif st.session_state.selected_nav == "webcam":
     </div>
     """, unsafe_allow_html=True)
 
+    # Confidence threshold slider for webcam
+    webcam_confidence = st.slider(
+        "Webcam Detection Confidence", 
+        min_value=0.1, 
+        max_value=0.9, 
+        value=0.25, 
+        step=0.05,
+        help="Lower values detect more objects but may include false positives. Higher values are more strict."
+    )
+    
     st.info("🎥 Click 'Start Webcam Detection' to begin. Click 'Stop' to end.")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -784,7 +794,7 @@ elif st.session_state.selected_nav == "webcam":
                 st.error("Model not loaded. Please ensure app/models/best.pt exists and is valid.")
                 st.session_state["webcam_active"] = False
             else:
-                predict_webcam(model)
+                predict_webcam(model, webcam_confidence)
                 if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
                     st.session_state["webcam_active"] = False
                     st.rerun()
