@@ -24,8 +24,13 @@ def load_model(model_path):
     """
     Load the YOLOv8 model from given path.
     """
+    # Print the device being used for troubleshooting
+    st.info(f"✅ Attempting to load model on device: {DEVICE}")
+
     try:
-        model = YOLO(model_path)
+        # Load a smaller, faster YOLOv8 model for better real-time performance.
+        # yolov8n.pt (nano) is a good starting point.
+        model = YOLO('yolov8n.pt') 
         st.success(f"✅ Model loaded successfully from {model_path} on device: {DEVICE}")
         return model
     except Exception as e:
@@ -124,11 +129,8 @@ class YOLOVideoTransformer(VideoTransformerBase):
                     label = self.model.names[cls] if hasattr(self.model, 'names') and cls < len(self.model.names) else str(cls)
                     color = (0, 255, 0) if 'NO-' not in label else (0, 0, 255)
                     cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
-                    cv2.putText(img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+                    cv2.putText(img, f'FPS: {self.fps:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
-        # Display FPS on the frame
-        cv2.putText(img, f'FPS: {self.fps:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
         return VideoFrame.from_ndarray(img, format="bgr24")
 
 

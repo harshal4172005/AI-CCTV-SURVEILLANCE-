@@ -126,6 +126,7 @@ body, .main, .stApp {
     cursor: pointer;
     font-size: 1rem;
     font-weight: 500;
+    color: var(--text-color);
 }
 .sidebar-radio-item:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -134,9 +135,7 @@ body, .main, .stApp {
 .sidebar-radio-selected {
     border: 1px solid var(--accent);
     background: rgba(79, 172, 254, 0.1);
-}
-.stRadio > label {
-    display: none;
+    color: var(--accent);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -174,7 +173,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    # Custom Navigation with icon cards
+    # Custom Radio Button replacement with HTML/CSS
     options = ["📊 Dashboard", "📷 Single Image", "📁 Batch Processing", "📹 Real-time Webcam", "📑 Violations Report"]
     icons = ["🧭", "🖼️", "🗂️", "📹", "📄"]
     
