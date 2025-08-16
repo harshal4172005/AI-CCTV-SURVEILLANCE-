@@ -8,3 +8,4 @@ app/data/violations.json
 # Generated reports
 app/reports/
 app/assets/
+users.db
