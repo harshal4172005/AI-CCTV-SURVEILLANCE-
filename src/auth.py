@@ -3,9 +3,9 @@
 import sqlite3
 import hashlib
 import os
+import pandas as pd
 
-# --- FIX: Define a specific, consistent path for the database ---
-# This ensures the main app and any other scripts use the same database file.
+# Define a specific, consistent path for the database
 DB_PATH = os.path.join("app", "data", "users.db")
 
 def hash_password(password):
@@ -14,7 +14,6 @@ def hash_password(password):
 
 def create_db_and_table():
     """Initializes the database and creates the users table if it doesn't exist."""
-    # --- FIX: Ensure the 'app/data' directory exists before creating the DB ---
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     db_exists = os.path.exists(DB_PATH)
     
@@ -47,13 +46,34 @@ def verify_user(username, password):
     """Verifies user credentials and returns the user's role on success."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
     cursor.execute("SELECT password_hash, role FROM users WHERE username = ?", (username,))
     result = cursor.fetchone()
     conn.close()
     
-    if result:
-        password_hash, role = result
-        if password_hash == hash_password(password):
-            return role
+    if result and result[0] == hash_password(password):
+        return result[1]  # Return role on success
     return None
+
+def add_user(username, password, role):
+    """Adds a new user to the database. Returns True on success, False on failure."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        password_hash = hash_password(password)
+        cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                       (username, password_hash, role))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        # This error means the username already exists
+        return False
+    finally:
+        conn.close()
+
+def get_all_users():
+    """Retrieves all users from the database for display."""
+    conn = sqlite3.connect(DB_PATH)
+    # Use pandas to read the sql query into a DataFrame for easy display
+    df = pd.read_sql_query("SELECT id, username, role FROM users", conn)
+    conn.close()
+    return df
