@@ -3,19 +3,16 @@ import os
 import sys
 import numpy as np
 import plotly.express as px
-import cv2
 import time
 from src.violation_logger import ViolationLogger
 from src.report_generator import PDFReport, CSVReport
 from PIL import Image
 
-# ✅ Add parent directory to Python path BEFORE importing from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.inference import load_model, predict_image, predict_webcam, get_detection_summary, YOLOVideoTransformer, DEVICE
-from src.auth import create_db_and_table, verify_user, add_user, get_all_users
+from src.inference import load_model, predict_image, predict_webcam, DEVICE
+from src.auth import create_db_and_table, verify_user, add_user, get_all_users, delete_user
 
 # --- 1. INITIALIZATION ---
-# Create the user database and default admin on first run
 create_db_and_table()
 
 # 🎨 Premium Page Configuration
@@ -51,31 +48,23 @@ st.markdown("""
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
-
 body, .main, .stApp {
     background: var(--dark-bg) !important;
     color: var(--text-primary) !important;
     font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
     transition: all 0.3s ease;
 }
-
 [data-theme="light"] body, [data-theme="light"] .main, [data-theme="light"] .stApp {
     background: var(--light-bg) !important;
     color: #1e293b !important;
 }
-
-/* Hide Streamlit default elements */
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 header { visibility: hidden; }
-
-/* Custom scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--dark-card); }
 ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary-dark); }
-
-/* Background gradient */
 .stApp::before {
     content: '';
     position: fixed;
@@ -87,14 +76,10 @@ header { visibility: hidden; }
     z-index: -1;
     pointer-events: none;
 }
-
-/* Sidebar styling */
 .sidebar .sidebar-content {
     background: var(--dark-card) !important;
     border-right: 1px solid var(--dark-border) !important;
 }
-
-/* Navigation cards */
 .nav-card {
     background: var(--dark-card);
     border: 1px solid var(--dark-border);
@@ -106,40 +91,33 @@ header { visibility: hidden; }
     position: relative;
     overflow: hidden;
 }
-
 .nav-card:hover {
     background: var(--primary);
     border-color: var(--primary);
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
 }
-
 .nav-card.active {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-color: var(--primary);
     box-shadow: var(--shadow-xl);
 }
-
 .nav-card-icon {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
     display: block;
 }
-
 .nav-card-title {
     font-weight: 600;
     font-size: 0.9rem;
     margin: 0;
     color: var(--text-primary);
 }
-
 .nav-card-description {
     font-size: 0.75rem;
     color: var(--text-secondary);
     margin: 0.25rem 0 0 0;
 }
-
-/* Stats cards */
 .stats-card {
     background: var(--dark-card);
     border: 1px solid var(--dark-border);
@@ -149,38 +127,31 @@ header { visibility: hidden; }
     text-align: center;
     transition: all 0.3s ease;
 }
-
 .stats-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
 }
-
 .stats-value {
     font-size: 2rem;
     font-weight: 700;
     color: var(--primary);
     margin-bottom: 0.5rem;
 }
-
 .stats-label {
     font-size: 0.875rem;
     color: var(--text-secondary);
     font-weight: 500;
 }
-
 .stats-change {
     font-size: 0.75rem;
     color: var(--success);
     font-weight: 600;
 }
-
-/* Hero section */
 .hero-section {
     text-align: center;
     padding: 3rem 0 2rem 0;
     position: relative;
 }
-
 .hero-title {
     font-size: clamp(2.5rem, 6vw, 4rem);
     font-weight: 800;
@@ -191,7 +162,6 @@ header { visibility: hidden; }
     margin-bottom: 1rem;
     line-height: 1.2;
 }
-
 .hero-subtitle {
     font-size: clamp(1rem, 2.5vw, 1.25rem);
     color: var(--text-secondary);
@@ -201,15 +171,12 @@ header { visibility: hidden; }
     margin-left: auto;
     margin-right: auto;
 }
-
-/* Feature cards */
 .feature-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1.5rem;
     margin: 2rem 0;
 }
-
 .feature-card {
     background: var(--dark-card);
     border: 1px solid var(--dark-border);
@@ -219,13 +186,11 @@ header { visibility: hidden; }
     position: relative;
     overflow: hidden;
 }
-
 .feature-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-xl);
     border-color: var(--primary);
 }
-
 .feature-icon {
     font-size: 2.5rem;
     margin-bottom: 1rem;
@@ -234,21 +199,17 @@ header { visibility: hidden; }
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
-
 .feature-title {
     font-size: 1.25rem;
     font-weight: 600;
     color: var(--text-primary);
     margin-bottom: 0.75rem;
 }
-
 .feature-description {
     color: var(--text-secondary);
     line-height: 1.6;
     font-size: 0.9rem;
 }
-
-/* Status indicators */
 .status-success {
     background: rgba(16, 185, 129, 0.1);
     border: 1px solid rgba(16, 185, 129, 0.3);
@@ -257,7 +218,6 @@ header { visibility: hidden; }
     border-radius: 8px;
     margin: 1rem 0;
 }
-
 .status-warning {
     background: rgba(245, 158, 11, 0.1);
     border: 1px solid rgba(245, 158, 11, 0.3);
@@ -266,8 +226,6 @@ header { visibility: hidden; }
     border-radius: 8px;
     margin: 1rem 0;
 }
-
-/* Section headers */
 .section-header {
     background: var(--dark-card);
     border: 1px solid var(--dark-border);
@@ -276,46 +234,30 @@ header { visibility: hidden; }
     margin: 1.5rem 0;
     text-align: center;
 }
-
 .section-title {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
 }
-
-/* Responsive design */
 @media (max-width: 768px) {
     .feature-grid {
         grid-template-columns: 1fr;
     }
-    
     .hero-title {
         font-size: 2rem;
     }
-    
     .hero-subtitle {
         font-size: 1rem;
     }
 }
-
-/* Animation classes */
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fade-in-up {
     animation: fadeInUp 0.6s ease-out;
 }
-
-/* Custom button styling */
 .stButton > button {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     border: none;
@@ -327,14 +269,11 @@ header { visibility: hidden; }
     width: 100%;
     margin: 0.25rem 0;
 }
-
 .stButton > button:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
     background: linear-gradient(135deg, var(--primary-dark), var(--primary));
 }
-
-/* Navigation button styling */
 div[data-testid="stButton"] > button {
     background: var(--dark-card);
     border: 1px solid var(--dark-border);
@@ -347,7 +286,6 @@ div[data-testid="stButton"] > button {
     margin: 0.25rem 0;
     text-align: left;
 }
-
 div[data-testid="stButton"] > button:hover {
     background: var(--primary);
     border-color: var(--primary);
@@ -355,16 +293,12 @@ div[data-testid="stButton"] > button:hover {
     box-shadow: var(--shadow-lg);
     color: white;
 }
-
-/* Active navigation button */
 div[data-testid="stButton"] > button[aria-pressed="true"] {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-color: var(--primary);
     color: white;
     box-shadow: var(--shadow-xl);
 }
-
-/* File uploader styling */
 .stFileUploader {
     background: var(--dark-card);
     border: 2px dashed var(--dark-border);
@@ -373,13 +307,10 @@ div[data-testid="stButton"] > button[aria-pressed="true"] {
     text-align: center;
     transition: all 0.3s ease;
 }
-
 .stFileUploader:hover {
     border-color: var(--primary);
     background: rgba(37, 99, 235, 0.05);
 }
-
-/* Radio button styling to look like cards */
 .stRadio > div {
     background: var(--dark-card);
     border: 1px solid var(--dark-border);
@@ -389,26 +320,23 @@ div[data-testid="stButton"] > button[aria-pressed="true"] {
     transition: all 0.3s ease;
     cursor: pointer;
 }
-
 .stRadio > div:hover {
     background: var(--primary);
     border-color: var(--primary);
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
 }
-
 .stRadio > div[data-testid="stRadio"] > div:first-child {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-color: var(--primary);
     box-shadow: var(--shadow-xl);
 }
-
-/* Hide radio button labels */
 .stRadio > label {
     display: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 # -------------------------------------------------------------------
 # App State and Model Loading
