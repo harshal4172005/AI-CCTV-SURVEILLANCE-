@@ -405,6 +405,9 @@ div[data-testid="stButton"] > button[aria-pressed="true"] {
 </style>
 """, unsafe_allow_html=True)
 
+# -------------------------------------------------------------------
+# App State and Model Loading
+# -------------------------------------------------------------------
 
 # Initialize counters and logger in session state
 if "images_processed_count" not in st.session_state:
@@ -417,9 +420,10 @@ if "last_violation_count" not in st.session_state:
     st.session_state["last_violation_count"] = 0
 if "auto_refresh" not in st.session_state:
     st.session_state["auto_refresh"] = True
+if "selected_nav" not in st.session_state:
+    st.session_state.selected_nav = "dashboard"
 
-
-# 📊 Model Status with Animation
+# Cache the loaded model
 @st.cache_resource
 def load_cached_model():
     model_path = "app/models/best.pt"
@@ -432,189 +436,16 @@ def load_cached_model():
         return None
 model = load_cached_model()
 
-# Model Status Indicator
-if model is not None:
-    st.markdown("""
-    <div class="status-success">
-        <strong>✅ Model loaded successfully</strong><br>
-        <small>Path: app/models/best.pt | Device: CPU</small>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div class="status-warning">
-        <strong>⚠️ Model not loaded</strong><br>
-        <small>Please ensure app/models/best.pt exists and is valid</small>
-    </div>
-    """, unsafe_allow_html=True)
+# -------------------------------------------------------------------
+# Page View Functions
+# -------------------------------------------------------------------
 
-# 🎛️ Modern Sidebar with Card Navigation
-with st.sidebar:
-    # Navigation Section
-    st.markdown("""
-    <div class="section-header">
-        <h3 class="section-title">🎛️ Navigation</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Navigation Cards
-    nav_options = [
-        {
-            "icon": "📊",
-            "title": "Dashboard",
-            "description": "Overview & Analytics",
-            "key": "dashboard"
-        },
-        {
-            "icon": "📷", 
-            "title": "Single Image",
-            "description": "Upload & Analyze",
-            "key": "single_image"
-        },
-        {
-            "icon": "📁",
-            "title": "Batch Processing", 
-            "description": "Multiple Images",
-            "key": "batch_processing"
-        },
-        {
-            "icon": "📹",
-            "title": "Real-time Webcam",
-            "description": "Live Detection",
-            "key": "webcam"
-        },
-        {
-            "icon": "📑",
-            "title": "Violations Report",
-            "description": "Detailed Logs",
-            "key": "violations_report"
-        }
-    ]
-    
-    # Initialize selected option in session state
-    if "selected_nav" not in st.session_state:
-        st.session_state.selected_nav = "dashboard"
-    
-    # Create professional navigation buttons
-    for nav_item in nav_options:
-        # Check if this is the currently selected navigation
-        is_active = st.session_state.selected_nav == nav_item['key']
-        
-        # Add visual indicator for active button
-        if is_active:
-            st.markdown(f"""
-            <div style="
-                background: linear-gradient(135deg, var(--primary), var(--secondary));
-                border: 1px solid var(--primary);
-                border-radius: 12px;
-                padding: 1rem;
-                margin: 0.25rem 0;
-                color: white;
-                font-weight: 600;
-                box-shadow: var(--shadow-xl);
-                text-align: center;
-            ">
-                {nav_item['icon']} {nav_item['title']}
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            # Create button with professional styling
-            if st.button(
-                f"{nav_item['icon']} {nav_item['title']}", 
-                key=f"nav_{nav_item['key']}",
-                help=nav_item['description']
-            ):
-                # Stop webcam if it's running when navigating away
-                if st.session_state.selected_nav == "webcam" and st.session_state.get("webcam_active", False):
-                    st.session_state["webcam_active"] = False
-                    st.session_state["yolo_transformer"] = None
-                
-                st.session_state.selected_nav = nav_item['key']
-                st.rerun()
-        
-        # Add some spacing between buttons
-        st.markdown("<br>", unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Live Statistics Section
-    st.markdown("""
-    <div class="section-header">
-        <h3 class="section-title">📈 Live Statistics</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Dynamically get stats from the active webcam transformer and logger
-    if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
-        images_processed = st.session_state["yolo_transformer"].processed_frames
-        fps = st.session_state["yolo_transformer"].fps
-        # Update violation count from transformer
-        if hasattr(st.session_state["yolo_transformer"], 'last_violation_count'):
-            st.session_state["last_violation_count"] = st.session_state["yolo_transformer"].last_violation_count
-    else:
-        images_processed = st.session_state["images_processed_count"]
-        fps = 0 # Default to 0 if not using webcam
+### FIX 1: PAGE OVERLAP BUG
+# Each page's content is now in its own function. This is a robust way
+# to ensure only one page is rendered at a time, fixing the overlap issue.
 
-    total_violations = len(st.session_state["logger"].get_violations())
-    
-    # Stats Cards
-    st.markdown(f"""
-    <div class="stats-card">
-        <div class="stats-value">{images_processed}</div>
-        <div class="stats-label">Images Processed</div>
-        <div class="stats-change">+12%</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown(f"""
-    <div class="stats-card">
-        <div class="stats-value">{total_violations}</div>
-        <div class="stats-label">Violations Logged</div>
-        <div class="stats-change">+2.1%</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Detection Classes Section
-    st.markdown("""
-    <div class="section-header">
-        <h3 class="section-title">🔍 Detection Classes</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    classes = ['Hardhat', 'Mask', 'NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 
-               'Person', 'Safety Cone', 'Safety Vest', 'machinery', 'vehicle']
-    
-    for class_name in classes:
-        if "NO-" in class_name:
-            st.markdown(f"🔴 **{class_name}** (Violation)")
-        else:
-            st.markdown(f"🟢 **{class_name}** (Compliant)")
-
-    # Live Statistics Summary
-    st.markdown("---")
-    st.markdown("""
-    <div class="section-header">
-        <h3 class="section-title">📊 Quick Stats</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    violations = st.session_state["logger"].get_violations()
-    total_violations = len(violations)
-    recent_violations = st.session_state.get("last_violation_count", 0)
-    
-    st.markdown(f"**Total Violations:** `{total_violations}`")
-    st.markdown(f"**Recent Detections:** `{recent_violations}`")
-
-
-# 📊 Dashboard View
-if st.session_state.selected_nav == "dashboard":
-    # Ensure webcam is stopped when viewing dashboard
-    if st.session_state.get("webcam_active", False):
-        st.session_state["webcam_active"] = False
-        st.session_state["yolo_transformer"] = None
-    
+def show_dashboard():
+    """Renders the main dashboard page."""
     st.markdown("""
     <div class="hero-section">
         <h1 class="hero-title">AI CCTV Surveillance System</h1>
@@ -625,32 +456,12 @@ if st.session_state.selected_nav == "dashboard":
     </div>
     """, unsafe_allow_html=True)
     
-    # Dynamically get violations for the dashboard chart
     violations = st.session_state["logger"].get_violations()
     
-    # Create a DataFrame for the chart data
-    violation_counts = {}
-    for v in violations:
-        violation_type = v['violation_type']
-        violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
-
-    chart_data = {
-        'Violation Type': list(violation_counts.keys()),
-        'Count': list(violation_counts.values())
-    }
-
-    # Dynamically get FPS and update from transformer
-    if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'fps'):
-        fps = st.session_state["yolo_transformer"].fps
-        # Update violation count from transformer
-        if hasattr(st.session_state["yolo_transformer"], 'last_violation_count'):
-            st.session_state["last_violation_count"] = st.session_state["yolo_transformer"].last_violation_count
-    else:
-        fps = 0 # Default to 0 if not using webcam
-
     # Performance Metrics Section
     st.markdown("### 📊 Performance Metrics")
     col1, col2, col3 = st.columns(3)
+    fps = st.session_state["yolo_transformer"].fps if st.session_state["yolo_transformer"] else 0
     with col1:
         st.metric("Processing Speed (FPS)", f"{fps:.2f}")
     with col2:
@@ -658,54 +469,38 @@ if st.session_state.selected_nav == "dashboard":
     with col3:
         st.metric("Recent Violations", f"{st.session_state['last_violation_count']}")
 
-    # Refresh controls
-    col1, col2, col3 = st.columns([1, 1, 2])
-    with col1:
-        st.session_state["auto_refresh"] = st.checkbox("🔄 Auto-refresh", value=st.session_state["auto_refresh"])
-    with col2:
-        if st.button("🔄 Manual Refresh"):
-            st.rerun()
-    with col3:
-        if st.session_state["auto_refresh"]:
-            # --- START OF FIX ---
-            # Added a more realistic sleep time of 5 seconds
-            # to make the auto-refresh feature noticeable and useful.
-            time.sleep(5)
-            # --- END OF FIX ---
-            st.info("🔄 Auto-refresh enabled - updates every 5 seconds")
-            st.rerun()
-
     # Chart Section
     st.markdown("### 📈 Real-time Violation Analysis")
     
-    # Always show the chart - create data if none exists
+    violation_counts = {v['violation_type']: 0 for v in violations}
+    for v in violations:
+        violation_counts[v['violation_type']] += 1
+        
+    chart_data = {
+        'Violation Type': list(violation_counts.keys()),
+        'Count': list(violation_counts.values())
+    }
+
+    ### FIX 2: MISSING DASHBOARD CHART
+    # This ensures that a placeholder chart is displayed when no violations
+    # have been logged yet, improving the initial user experience.
     if not chart_data['Violation Type']:
-        # --- START OF FIX ---
-        # Added a clear call-to-action message to guide the user.
-        # This will be shown when no data is present.
-        st.info("No violations logged yet. Please go to 'Single Image' or 'Real-time Webcam' to start a session.")
-        # We can also add a placeholder chart with no data to maintain the layout.
+        st.info("No violations logged yet. Process an image or start the webcam to see live analytics.")
         chart_data = {
-            'Violation Type': ['NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 'Other Violations'],
-            'Count': [0, 0, 0, 0]
+            'Violation Type': ['NO-Hardhat', 'NO-Mask', 'NO-Safety Vest'],
+            'Count': [0, 0, 0]
         }
-        # --- END OF FIX ---
     
-    # Create the chart
     fig = px.bar(chart_data, x='Violation Type', y='Count',
-                 title="Real-time Violation Analysis",
+                 title="Violation Types Breakdown",
                  color='Count',
-                 color_continuous_scale='viridis')
+                 color_continuous_scale=px.colors.sequential.Viridis)
     
-    # Update chart styling
     fig.update_layout(
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='white'),
-        title_font_color='white',
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='white'), title_font_color='white',
         xaxis=dict(gridcolor='rgba(255,255,255,0.1)'),
-        yaxis=dict(gridcolor='rgba(255,255,255,0.1)')
-    )
+        yaxis=dict(gridcolor='rgba(255,255,255,0.1)'))
     st.plotly_chart(fig, use_container_width=True)
 
     # Feature Cards Section
@@ -713,62 +508,37 @@ if st.session_state.selected_nav == "dashboard":
     st.markdown("""
     <div class="feature-grid">
         <div class="feature-card">
-            <div class="feature-icon">⚡</div>
-            <div class="feature-title">Real-Time Detection</div>
+            <div class="feature-icon">⚡</div><div class="feature-title">Real-Time Detection</div>
             <div class="feature-description">Instant PPE and safety violation detection using YOLOv8.</div>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <div class="feature-title">Live Analytics</div>
+            <div class="feature-icon">📊</div><div class="feature-title">Live Analytics</div>
             <div class="feature-description">Animated charts and statistics for system performance.</div>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">🎨</div>
-            <div class="feature-title">Premium UI/UX</div>
+            <div class="feature-icon">🎨</div><div class="feature-title">Premium UI/UX</div>
             <div class="feature-description">Modern, responsive, and animated interface for portfolio showcase.</div>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <div class="feature-title">Multi-Class Detection</div>
+            <div class="feature-icon">🛡️</div><div class="feature-title">Multi-Class Detection</div>
             <div class="feature-description">Detects hardhats, masks, vests, people, vehicles, and more.</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# 📷 Single Image Upload with Enhanced UI
-elif st.session_state.selected_nav == "single_image":
+
+def show_single_image():
+    """Renders the single image processing page."""
     st.markdown("""
-    <div class="section-header">
-        <h2 class="section-title">📷 Single Image Detection</h2>
-    </div>
+    <div class="section-header"><h2 class="section-title">📷 Single Image Detection</h2></div>
     """, unsafe_allow_html=True)
     
-    # Confidence threshold slider
     confidence_threshold = st.slider(
-        "Detection Confidence Threshold", 
-        min_value=0.1, 
-        max_value=0.9, 
-        value=0.25, 
-        step=0.05,
-        help="Lower values detect more objects but may include false positives. Higher values are more strict."
+        "Detection Confidence Threshold", 0.1, 0.9, 0.25, 0.05,
+        help="Lower values detect more objects but may include false positives."
     )
     
-    # Information about what the model detects
-    st.info("""
-    🎯 **What this model detects:**
-    - **Compliant PPE**: Hardhat, Mask, Safety Vest, Safety Cone
-    - **Violations**: NO-Hardhat, NO-Mask, NO-Safety Vest  
-    - **Other**: Person, machinery, vehicle
-    
-    💡 **Tips for better detection:**
-    - Use clear, well-lit images
-    - Ensure the person is clearly visible
-    - Try adjusting the confidence threshold if no detections are found
-    """)
-    
-    image_file = st.file_uploader("Upload an image for analysis", 
-                                 type=["jpg", "jpeg", "png"], 
-                                 help="Upload a single image to detect PPE and safety violations")
+    image_file = st.file_uploader("Upload an image for analysis", type=["jpg", "jpeg", "png"])
     
     if image_file:
         col1, col2 = st.columns(2)
@@ -776,149 +546,67 @@ elif st.session_state.selected_nav == "single_image":
         with col1:
             st.image(image, caption="Original Image", use_container_width=True)
         with col2:
-            if model is None:
-                st.error("Model not loaded. Please ensure app/models/best.pt exists and is valid.")
-                st.image(image, caption="Original Image (No Detection Available)", use_container_width=True)
+            if model:
+                result_img = predict_image(model, image)
+                st.image(result_img, caption="Detected Objects", use_container_width=True)
+                st.session_state["images_processed_count"] += 1
             else:
-                try:
-                    img_array = np.array(image.convert("RGB"))
-                    # Use user-defined confidence threshold
-                    results = model(img_array, device=DEVICE, conf=confidence_threshold, iou=0.45)
-                    # Draw boxes for display
-                    result_img = img_array.copy()
-                    if results and len(results) > 0 and hasattr(results[0], 'boxes') and results[0].boxes is not None:
-                        boxes = results[0].boxes.xyxy.cpu().numpy()
-                        confs = results[0].boxes.conf.cpu().numpy()
-                        clss = results[0].boxes.cls.cpu().numpy().astype(int)
-                        
-                        # Show detection summary
-                        detection_summary = []
-                        for box, conf, cls in zip(boxes, confs, clss):
-                            label = model.names[cls] if hasattr(model, 'names') and cls < len(model.names) else str(cls)
-                            detection_summary.append(f"{label} ({conf:.2f})")
-                        
-                        if detection_summary:
-                            st.success(f"🔍 Detected: {', '.join(detection_summary)}")
-                        
-                        for box, conf, cls in zip(boxes, confs, clss):
-                            x1, y1, x2, y2 = map(int, box)
-                            label = model.names[cls] if hasattr(model, 'names') and cls < len(model.names) else str(cls)
-                            color = (0, 255, 0) if 'NO-' not in label else (0, 0, 255)
-                            cv2.rectangle(result_img, (x1, y1), (x2, y2), color, 2)
-                            cv2.putText(result_img, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-                    else:
-                        st.warning("⚠️ No PPE violations detected. The person appears to be wearing proper safety equipment.")
-                    st.image(result_img, caption="Detected Objects", use_container_width=True)
-                    st.session_state["images_processed_count"] += 1
-                except Exception as e:
-                    st.warning(f"Detection failed: {e}")
-                    st.image(image, caption="Detected Objects (No Detection Available)", use_container_width=True)
+                st.error("Model not loaded. Cannot perform detection.")
 
-# 🗂️ Multiple Image Upload with Enhanced UI
-elif st.session_state.selected_nav == "batch_processing":
+
+def show_batch_processing():
+    """Renders the batch image processing page."""
     st.markdown("""
-    <div class="section-header">
-        <h2 class="section-title">📁 Batch Image Processing</h2>
-    </div>
+    <div class="section-header"><h2 class="section-title">📁 Batch Image Processing</h2></div>
     """, unsafe_allow_html=True)
     
-    image_files = st.file_uploader("Upload multiple images for batch analysis", 
-                                  type=["jpg", "jpeg", "png"], 
-                                  accept_multiple_files=True,
-                                  help="Upload multiple images to batch process")
+    image_files = st.file_uploader("Upload multiple images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
     
     if image_files:
-        st.info(f"📁 Processing {len(image_files)} images...")
-        
-        # Progress bar
+        st.info(f"Processing {len(image_files)} images...")
         progress_bar = st.progress(0)
-        status_text = st.empty()
         
         for i, image_file in enumerate(image_files):
-            status_text.text(f"Processing {image_file.name}... ({i+1}/{len(image_files)})")
-            progress_bar.progress((i + 1) / len(image_files))
-            
-            st.markdown(f"### 📸 Image {i+1}: {image_file.name}")
-            
+            st.markdown(f"### 📸 Image: {image_file.name}")
             col1, col2 = st.columns(2)
-            
+            image = Image.open(image_file)
             with col1:
-                image = Image.open(image_file)
-                st.image(image, caption=f"Original - {image_file.name}", use_container_width=True)
-            
+                st.image(image, caption="Original", use_container_width=True)
             with col2:
-                if model is None:
-                    st.error("Model not loaded. Please ensure app/models/best.pt exists and is valid.")
-                    st.image(image, caption=f"Original - {image_file.name} (No Detection Available)", use_container_width=True)
+                if model:
+                    result_img = predict_image(model, image)
+                    st.image(result_img, caption="Detected", use_container_width=True)
+                    st.session_state["images_processed_count"] += 1
                 else:
-                    with st.spinner(f"🔍 Processing {image_file.name}..."):
-                        result_img = predict_image(model, image)
-                        
-                        # Get detection summary
-                        img_array = np.array(image.convert("RGB"))
-                        results = model(img_array, device=DEVICE)
-                        summary = get_detection_summary(results)
-                        
-                        st.image(result_img, caption=f"Detected - {image_file.name}", use_container_width=True)
-                        st.markdown(f"**📊 Summary:** {summary}")
-            
+                    st.error("Model not loaded.")
             st.markdown("---")
-            st.session_state["images_processed_count"] += 1
-        
-        status_text.text("✅ Batch processing completed!")
-        st.success(f"Successfully processed {len(image_files)} images!")
+            progress_bar.progress((i + 1) / len(image_files))
+        st.success("Batch processing completed!")
 
-# 🖥️ Webcam Mode with Enhanced UI
-elif st.session_state.selected_nav == "webcam":
+
+def show_webcam():
+    """Renders the real-time webcam detection page."""
     st.markdown("""
-    <div class="section-header">
-        <h2 class="section-title">📹 Real-time Webcam Detection</h2>
-    </div>
+    <div class="section-header"><h2 class="section-title">📹 Real-time Webcam Detection</h2></div>
     """, unsafe_allow_html=True)
-
-    # Confidence threshold slider for webcam
-    webcam_confidence = st.slider(
-        "Webcam Detection Confidence", 
-        min_value=0.1, 
-        max_value=0.9, 
-        value=0.25, 
-        step=0.05,
-        help="Lower values detect more objects but may include false positives. Higher values are more strict."
-    )
     
-    st.info("🎥 Click 'Start Webcam Detection' to begin. Click 'Stop' to end.")
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        if "webcam_active" not in st.session_state:
-            st.session_state["webcam_active"] = False
+    webcam_confidence = st.slider("Webcam Detection Confidence", 0.1, 0.9, 0.25, 0.05)
+    st.info("Click 'Start' to begin live detection from your webcam.")
+    
+    if model:
+        predict_webcam(model, webcam_confidence)
+    else:
+        st.error("Model not loaded. Cannot start webcam detection.")
 
-        if not st.session_state["webcam_active"]:
-            if st.button("🎥 Start Webcam Detection", key="start_webcam_portfolio"):
-                st.session_state["webcam_active"] = True
 
-        if st.session_state["webcam_active"]:
-            if model is None:
-                st.error("Model not loaded. Please ensure app/models/best.pt exists and is valid.")
-                st.session_state["webcam_active"] = False
-            else:
-                # Show real-time violation notifications
-                if st.session_state["yolo_transformer"] and hasattr(st.session_state["yolo_transformer"], 'last_violation_count'):
-                    recent_violations = st.session_state["yolo_transformer"].last_violation_count
-                    if recent_violations > 0:
-                        st.success(f"🚨 **Violation Detected!** {recent_violations} new violation(s) logged.")
-                
-                predict_webcam(model, webcam_confidence)
-                if st.button("🛑 Stop Webcam Detection", key="stop_webcam_portfolio"):
-                    st.session_state["webcam_active"] = False
-                    st.session_state["yolo_transformer"] = None
-                    st.rerun()
-
-# 📑 Violations Report Section
-elif st.session_state.selected_nav == "violations_report":
+def show_violations_report():
+    """Renders the violations report page."""
     st.markdown("""
     <div class="section-header">
         <h2 class="section-title">📑 Session Violations Report</h2>
-        <p style="color: var(--text-secondary); text-align: center; margin-top: 0.5rem;">View all PPE violations detected during this session and export them to PDF or CSV.</p>
+        <p style="color: var(--text-secondary); text-align: center; margin-top: 0.5rem;">
+            View all PPE violations detected during this session.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -926,65 +614,121 @@ elif st.session_state.selected_nav == "violations_report":
     
     if not violations:
         st.info("✅ No violations recorded yet.")
-    else:
-        # Sort violations by timestamp (newest first)
-        violations.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        # Display violation summary
-        violation_counts = {}
-        for v in violations:
-            violation_type = v['violation_type']
-            violation_counts[violation_type] = violation_counts.get(violation_type, 0) + 1
+        return
 
-        st.subheader("📊 Violation Summary")
-        st.markdown(f"**Total Violations:** `{len(violations)}`")
-        
-        for v_type, count in violation_counts.items():
-            st.markdown(f"- **{v_type}**: `{count}` violations")
-        
-        # Action Buttons at the top
-        st.markdown("### 🛠️ Actions")
-        col_gen_pdf, col_gen_csv, col_clear = st.columns([1, 1, 1])
-        with col_gen_pdf:
-            if st.button("📄 Generate PDF Report", key="pdf_btn"):
-                pdf = PDFReport()
-                pdf_path = pdf.generate(violations)
-                with open(pdf_path, "rb") as f:
-                    st.download_button("⬇️ Download PDF", f, file_name="ppe_violations_report.pdf")
+    violations.sort(key=lambda x: x['timestamp'], reverse=True)
+    
+    st.subheader("📊 Violation Summary")
+    violation_counts = {}
+    for v in violations:
+        v_type = v['violation_type']
+        violation_counts[v_type] = violation_counts.get(v_type, 0) + 1
+    
+    st.markdown(f"**Total Violations:** `{len(violations)}`")
+    for v_type, count in violation_counts.items():
+        st.markdown(f"- **{v_type}**: `{count}` violations")
+    
+    st.markdown("### 🛠️ Actions")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        pdf_report = PDFReport()
+        pdf_path = pdf_report.generate(violations)
+        with open(pdf_path, "rb") as f:
+            st.download_button("📄 Download PDF Report", f, file_name="violations_report.pdf")
+    with col2:
+        csv_report = CSVReport()
+        csv_path = csv_report.generate(violations)
+        with open(csv_path, "rb") as f:
+            st.download_button("📊 Download CSV Report", f, file_name="violations_report.csv")
+    with col3:
+        if st.button("🗑️ Clear All Violations"):
+            st.session_state["logger"].clear()
+            st.success("All violations cleared!")
+            st.rerun()
+            
+    st.markdown("---")
+    st.subheader("📸 Violation Logs (Newest First)")
 
-        with col_gen_csv:
-            if st.button("📊 Generate CSV Report", key="csv_btn"):
-                csv = CSVReport()
-                csv_path = csv.generate(violations)
-                with open(csv_path, "rb") as f:
-                    st.download_button("⬇️ Download CSV", f, file_name="ppe_violations_report.csv")
-
-        with col_clear:
-            if st.button("🗑️ Clear All Violations", key="clear_btn"):
-                st.session_state["logger"].clear()
-                st.success("✅ All violations cleared successfully!")
-                st.rerun()
-        
+    for v in violations:
+        col1, col2 = st.columns([1, 3])
+        with col1:
+            st.image(v["image_path"], width=120, caption=v['violation_type'])
+        with col2:
+            st.markdown(f"**Type:** {v['violation_type']}<br>**Time:** {v['timestamp']}", unsafe_allow_html=True)
         st.markdown("---")
-        
-        # Violation Logs Section
-        st.subheader("📸 Violation Logs (Newest First)")
 
-        for i, v in enumerate(violations):
-            col1, col2 = st.columns([1, 3])
-            with col1:
-                st.image(v["image_path"], width=120, caption=f"{v['violation_type']}")
-            with col2:
-                st.markdown(f"**Type:** {v['violation_type']}  \n**Time:** {v['timestamp']}")
-            st.markdown("---")
 
-# 📊 Footer with Portfolio Information
+# -------------------------------------------------------------------
+# Sidebar and Navigation
+# -------------------------------------------------------------------
+
+with st.sidebar:
+    st.markdown("<div class='section-header'><h3 class='section-title'>🎛️ Navigation</h3></div>", unsafe_allow_html=True)
+    
+    nav_options = {
+        "dashboard": {"icon": "📊", "title": "Dashboard", "desc": "Overview & Analytics"},
+        "single_image": {"icon": "📷", "title": "Single Image", "desc": "Upload & Analyze"},
+        "batch_processing": {"icon": "📁", "title": "Batch Processing", "desc": "Multiple Images"},
+        "webcam": {"icon": "📹", "title": "Real-time Webcam", "desc": "Live Detection"},
+        "violations_report": {"icon": "📑", "title": "Violations Report", "desc": "Detailed Logs"}
+    }
+    
+    for key, item in nav_options.items():
+        if st.button(f"{item['icon']} {item['title']}", key=f"nav_{key}", help=item['desc']):
+            st.session_state.selected_nav = key
+            st.rerun()
+
+    st.markdown("---")
+    st.markdown("<div class='section-header'><h3 class='section-title'>📈 Live Statistics</h3></div>", unsafe_allow_html=True)
+    
+    total_violations = len(st.session_state["logger"].get_violations())
+    st.markdown(f"""
+    <div class="stats-card">
+        <div class="stats-value">{st.session_state['images_processed_count']}</div>
+        <div class="stats-label">Images Processed</div>
+    </div>
+    <div class="stats-card">
+        <div class="stats-value">{total_violations}</div>
+        <div class="stats-label">Violations Logged</div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("---")
+
+# -------------------------------------------------------------------
+# Main App Logic
+# -------------------------------------------------------------------
+
+# Model Status Indicator
+if model:
+    st.markdown(f"""
+    <div class="status-success"><strong>✅ Model loaded successfully</strong>
+    <small> | Path: app/models/best.pt | Device: {DEVICE}</small></div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div class="status-warning"><strong>⚠️ Model not loaded.</strong> 
+    <small>Please ensure app/models/best.pt exists.</small></div>
+    """, unsafe_allow_html=True)
+
+# Page Router
+page_router = {
+    "dashboard": show_dashboard,
+    "single_image": show_single_image,
+    "batch_processing": show_batch_processing,
+    "webcam": show_webcam,
+    "violations_report": show_violations_report
+}
+# Execute the function for the selected page
+page_to_show = page_router.get(st.session_state.selected_nav)
+if page_to_show:
+    page_to_show()
+
+# Footer
 st.markdown("---")
 st.markdown("""
 <div style="background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 2rem; text-align: center; margin-top: 3rem;">
     <h3 style="color: var(--text-primary); margin-bottom: 1rem;">🛡️ AI CCTV Surveillance System</h3>
-    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Advanced PPE Detection for Construction Site Safety</p>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">Built with YOLOv8, Streamlit, and Modern Web Technologies</p>
-    <p style="color: var(--text-muted); font-size: 0.8rem;">Portfolio Showcase Project | Professional AI/ML Implementation</p>
+    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Built with YOLOv8 and Streamlit</p>
+    <p style="color: var(--text-muted); font-size: 0.8rem;">Portfolio Showcase Project</p>
 </div>
 """, unsafe_allow_html=True)
