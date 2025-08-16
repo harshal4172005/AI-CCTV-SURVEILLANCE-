@@ -1,11 +1,12 @@
-#Username: admin
-#Password: admin123
+# src/auth.py
 
 import sqlite3
 import hashlib
 import os
 
-DB_FILE = "users.db"
+# --- FIX: Define a specific, consistent path for the database ---
+# This ensures the main app and any other scripts use the same database file.
+DB_PATH = os.path.join("app", "data", "users.db")
 
 def hash_password(password):
     """Hashes the password using SHA-256."""
@@ -13,13 +14,13 @@ def hash_password(password):
 
 def create_db_and_table():
     """Initializes the database and creates the users table if it doesn't exist."""
-    # Check if the database file exists. If not, we will create it and the admin user.
-    db_exists = os.path.exists(DB_FILE)
+    # --- FIX: Ensure the 'app/data' directory exists before creating the DB ---
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    db_exists = os.path.exists(DB_PATH)
     
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Create table
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +30,6 @@ def create_db_and_table():
     )
     ''')
     
-    # If the database was just created, add a default admin user
     if not db_exists:
         print("First time setup: Creating default admin user...")
         try:
@@ -38,7 +38,6 @@ def create_db_and_table():
                            ('admin', admin_pass_hash, 'Admin'))
             print("Default user 'admin' with password 'admin123' created.")
         except sqlite3.IntegrityError:
-            # This might happen in rare race conditions, but it's good practice to handle.
             print("Admin user already exists.")
 
     conn.commit()
@@ -46,7 +45,7 @@ def create_db_and_table():
 
 def verify_user(username, password):
     """Verifies user credentials and returns the user's role on success."""
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
     cursor.execute("SELECT password_hash, role FROM users WHERE username = ?", (username,))
@@ -55,7 +54,6 @@ def verify_user(username, password):
     
     if result:
         password_hash, role = result
-        # Verify the provided password against the stored hash
         if password_hash == hash_password(password):
-            return role  # Login successful, return the user's role
-    return None # Login failed
+            return role
+    return None

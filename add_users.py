@@ -4,14 +4,14 @@ import sqlite3
 import hashlib
 import os
 
-# --- Configuration ---
-DB_FILE = "users.db"
+# --- FIX: Point to the same database path as the main app ---
+DB_PATH = os.path.join("app", "data", "users.db")
+
 # You can change the default passwords here if you like
 USERS_TO_ADD = {
     "manager": ("manager123", "Manager"),
     "viewer": ("viewer123", "Viewer")
 }
-# ---------------------
 
 def hash_password(password):
     """Hashes the password using SHA-256."""
@@ -19,11 +19,12 @@ def hash_password(password):
 
 def add_user(username, password, role):
     """Adds a new user to the database."""
-    if not os.path.exists(DB_FILE):
-        print(f"Error: Database file '{DB_FILE}' not found. Please run the main app first to create it.")
+    if not os.path.exists(DB_PATH):
+        print(f"Error: Database file not found at '{DB_PATH}'.")
+        print("Please run the main Streamlit app first to create the database.")
         return
 
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
     try:
