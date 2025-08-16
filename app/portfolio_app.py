@@ -667,9 +667,12 @@ if st.session_state.selected_nav == "dashboard":
             st.rerun()
     with col3:
         if st.session_state["auto_refresh"]:
+            # --- START OF FIX ---
+            # Added a more realistic sleep time of 5 seconds
+            # to make the auto-refresh feature noticeable and useful.
+            time.sleep(5)
+            # --- END OF FIX ---
             st.info("🔄 Auto-refresh enabled - updates every 5 seconds")
-            # Add a small delay and rerun for auto-refresh
-            time.sleep(0.1)
             st.rerun()
 
     # Chart Section
@@ -677,12 +680,16 @@ if st.session_state.selected_nav == "dashboard":
     
     # Always show the chart - create data if none exists
     if not chart_data['Violation Type']:
-        # Create sample data for demonstration
+        # --- START OF FIX ---
+        # Added a clear call-to-action message to guide the user.
+        # This will be shown when no data is present.
+        st.info("No violations logged yet. Please go to 'Single Image' or 'Real-time Webcam' to start a session.")
+        # We can also add a placeholder chart with no data to maintain the layout.
         chart_data = {
-            'Violation Type': ['NO-Hardhat', 'NO-Mask', 'NO-Safety Vest'],
-            'Count': [0, 0, 0]
+            'Violation Type': ['NO-Hardhat', 'NO-Mask', 'NO-Safety Vest', 'Other Violations'],
+            'Count': [0, 0, 0, 0]
         }
-        st.info("No violations logged yet. Start a session to see real-time data.")
+        # --- END OF FIX ---
     
     # Create the chart
     fig = px.bar(chart_data, x='Violation Type', y='Count',
