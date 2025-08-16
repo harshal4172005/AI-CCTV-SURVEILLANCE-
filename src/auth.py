@@ -30,14 +30,12 @@ def create_db_and_table():
     ''')
     
     if not db_exists:
-        print("First time setup: Creating default admin user...")
         try:
             admin_pass_hash = hash_password("admin123")
             cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
                            ('admin', admin_pass_hash, 'Admin'))
-            print("Default user 'admin' with password 'admin123' created.")
         except sqlite3.IntegrityError:
-            print("Admin user already exists.")
+            pass
 
     conn.commit()
     conn.close()
@@ -51,7 +49,7 @@ def verify_user(username, password):
     conn.close()
     
     if result and result[0] == hash_password(password):
-        return result[1]  # Return role on success
+        return result[1]
     return None
 
 def add_user(username, password, role):
@@ -65,7 +63,6 @@ def add_user(username, password, role):
         conn.commit()
         return True
     except sqlite3.IntegrityError:
-        # This error means the username already exists
         return False
     finally:
         conn.close()
@@ -73,7 +70,26 @@ def add_user(username, password, role):
 def get_all_users():
     """Retrieves all users from the database for display."""
     conn = sqlite3.connect(DB_PATH)
-    # Use pandas to read the sql query into a DataFrame for easy display
     df = pd.read_sql_query("SELECT id, username, role FROM users", conn)
     conn.close()
     return df
+
+# --- NEW FUNCTION TO DELETE A USER ---
+def delete_user(username):
+    """Deletes a user from the database. Returns True on success."""
+    # Safety check: do not delete the main admin account
+    if username == 'admin':
+        print("Error: Cannot delete the primary admin account.")
+        return False
+        
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+    finally:
+        conn.close()
