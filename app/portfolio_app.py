@@ -655,7 +655,6 @@ def show_violations_report():
             st.markdown(f"**Type:** {v['violation_type']}<br>**Time:** {v['timestamp']}", unsafe_allow_html=True)
         st.markdown("---")
 
-
 # --- NEW FEATURE: ADMIN PANEL PAGE ---
 def show_admin_panel():
     st.markdown("<div class='section-header'><h2 class='section-title'>👑 Admin Panel</h2></div>", unsafe_allow_html=True)
