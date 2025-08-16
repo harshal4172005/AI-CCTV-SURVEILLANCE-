@@ -12,6 +12,11 @@ from PIL import Image
 # ✅ Add parent directory to Python path BEFORE importing from src
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.inference import load_model, predict_image, predict_webcam, get_detection_summary, YOLOVideoTransformer, DEVICE
+from src.auth import create_db_and_table, verify_user
+
+# --- 1. INITIALIZATION ---
+# Create the user database and default admin on first run
+create_db_and_table()
 
 # 🎨 Premium Page Configuration
 st.set_page_config(
@@ -405,25 +410,25 @@ div[data-testid="stButton"] > button[aria-pressed="true"] {
 </style>
 """, unsafe_allow_html=True)
 
+
 # -------------------------------------------------------------------
 # App State and Model Loading
 # -------------------------------------------------------------------
 
-# Initialize counters and logger in session state
-if "images_processed_count" not in st.session_state:
-    st.session_state["images_processed_count"] = 0
-if "logger" not in st.session_state:
-    st.session_state["logger"] = ViolationLogger()
-if "yolo_transformer" not in st.session_state:
-    st.session_state["yolo_transformer"] = None
-if "last_violation_count" not in st.session_state:
-    st.session_state["last_violation_count"] = 0
-if "auto_refresh" not in st.session_state:
-    st.session_state["auto_refresh"] = True
-if "selected_nav" not in st.session_state:
-    st.session_state.selected_nav = "dashboard"
+# Initialize session state for login and the rest of the app
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.username = None
+    st.session_state.role = None
+    st.session_state.logger = ViolationLogger()
+    st.session_state.selected_nav = "dashboard" # Default page after login
+    # Add other initializations
+    st.session_state.images_processed_count = 0
+    st.session_state.yolo_transformer = None
+    st.session_state.last_violation_count = 0
+    st.session_state.auto_refresh = True
 
-# Cache the loaded model
+
 @st.cache_resource
 def load_cached_model():
     model_path = "app/models/best.pt"
@@ -439,10 +444,6 @@ model = load_cached_model()
 # -------------------------------------------------------------------
 # Page View Functions
 # -------------------------------------------------------------------
-
-### FIX 1: PAGE OVERLAP BUG
-# Each page's content is now in its own function. This is a robust way
-# to ensure only one page is rendered at a time, fixing the overlap issue.
 
 def show_dashboard():
     """Renders the main dashboard page."""
@@ -481,9 +482,6 @@ def show_dashboard():
         'Count': list(violation_counts.values())
     }
 
-    ### FIX 2: MISSING DASHBOARD CHART
-    # This ensures that a placeholder chart is displayed when no violations
-    # have been logged yet, improving the initial user experience.
     if not chart_data['Violation Type']:
         st.info("No violations logged yet. Process an image or start the webcam to see live analytics.")
         chart_data = {
@@ -641,10 +639,12 @@ def show_violations_report():
         with open(csv_path, "rb") as f:
             st.download_button("📊 Download CSV Report", f, file_name="violations_report.csv")
     with col3:
-        if st.button("🗑️ Clear All Violations"):
-            st.session_state["logger"].clear()
-            st.success("All violations cleared!")
-            st.rerun()
+        # --- Role-Based Action ---
+        if st.session_state.role == 'Admin':
+            if st.button("🗑️ Clear All Violations"):
+                st.session_state["logger"].clear()
+                st.success("All violations cleared!")
+                st.rerun()
             
     st.markdown("---")
     st.subheader("📸 Violation Logs (Newest First)")
@@ -658,77 +658,119 @@ def show_violations_report():
         st.markdown("---")
 
 
-# -------------------------------------------------------------------
-# Sidebar and Navigation
-# -------------------------------------------------------------------
+# --- MAIN APP LOGIC (Login vs. Main App) ---
 
-with st.sidebar:
-    st.markdown("<div class='section-header'><h3 class='section-title'>🎛️ Navigation</h3></div>", unsafe_allow_html=True)
-    
-    nav_options = {
-        "dashboard": {"icon": "📊", "title": "Dashboard", "desc": "Overview & Analytics"},
-        "single_image": {"icon": "📷", "title": "Single Image", "desc": "Upload & Analyze"},
-        "batch_processing": {"icon": "📁", "title": "Batch Processing", "desc": "Multiple Images"},
-        "webcam": {"icon": "📹", "title": "Real-time Webcam", "desc": "Live Detection"},
-        "violations_report": {"icon": "📑", "title": "Violations Report", "desc": "Detailed Logs"}
-    }
-    
-    for key, item in nav_options.items():
-        if st.button(f"{item['icon']} {item['title']}", key=f"nav_{key}", help=item['desc']):
-            st.session_state.selected_nav = key
+def show_login_page():
+    """Displays the login form."""
+    st.markdown("<h1 class='hero-title'>AI CCTV Surveillance System Login</h1>", unsafe_allow_html=True)
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
+
+        if submitted:
+            role = verify_user(username, password)
+            if role:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.session_state.role = role
+                st.success("Logged in successfully!")
+                st.rerun()
+            else:
+                st.error("Invalid username or password")
+
+def show_main_app():
+    """Displays the main application after successful login."""
+    # --- Sidebar and Navigation ---
+    with st.sidebar:
+        st.markdown(f"Welcome, **{st.session_state.username}**!")
+        st.markdown(f"Role: **{st.session_state.role}**")
+        if st.button("Logout"):
+            # Clear session state on logout
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
             st.rerun()
 
-    st.markdown("---")
-    st.markdown("<div class='section-header'><h3 class='section-title'>📈 Live Statistics</h3></div>", unsafe_allow_html=True)
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown("<div class='section-header'><h3 class='section-title'>🎛️ Navigation</h3></div>", unsafe_allow_html=True)
+
+        # --- Role-Based Navigation ---
+        nav_options = {
+            "dashboard": {"icon": "📊", "title": "Dashboard", "desc": "Overview & Analytics"},
+            "single_image": {"icon": "📷", "title": "Single Image", "desc": "Upload & Analyze"},
+            "batch_processing": {"icon": "📁", "title": "Batch Processing", "desc": "Multiple Images"},
+            "webcam": {"icon": "📹", "title": "Real-time Webcam", "desc": "Live Detection"},
+            "violations_report": {"icon": "📑", "title": "Violations Report", "desc": "Detailed Logs"}
+        }
+
+        # Filter navigation based on role
+        if st.session_state.role == 'Viewer':
+            allowed_pages = ['dashboard', 'webcam']
+        elif st.session_state.role == 'Manager':
+            allowed_pages = ['dashboard', 'single_image', 'batch_processing', 'webcam', 'violations_report']
+        else: # Admin
+            allowed_pages = list(nav_options.keys())
+
+        for key in allowed_pages:
+            item = nav_options[key]
+            if st.button(f"{item['icon']} {item['title']}", key=f"nav_{key}", help=item['desc']):
+                st.session_state.selected_nav = key
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("<div class='section-header'><h3 class='section-title'>📈 Live Statistics</h3></div>", unsafe_allow_html=True)
+        
+        total_violations = len(st.session_state["logger"].get_violations())
+        st.markdown(f"""
+        <div class="stats-card">
+            <div class="stats-value">{st.session_state['images_processed_count']}</div>
+            <div class="stats-label">Images Processed</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-value">{total_violations}</div>
+            <div class="stats-label">Violations Logged</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("---")
+
+    # --- Main Content Area ---
+    # Model Status Indicator
+    if model:
+        st.markdown(f"""
+        <div class="status-success"><strong>✅ Model loaded successfully</strong>
+        <small> | Path: app/models/best.pt | Device: {DEVICE}</small></div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="status-warning"><strong>⚠️ Model not loaded.</strong> 
+        <small>Please ensure app/models/best.pt exists.</small></div>
+        """, unsafe_allow_html=True)
+
+    page_router = {
+        "dashboard": show_dashboard,
+        "single_image": show_single_image,
+        "batch_processing": show_batch_processing,
+        "webcam": show_webcam,
+        "violations_report": show_violations_report
+    }
     
-    total_violations = len(st.session_state["logger"].get_violations())
-    st.markdown(f"""
-    <div class="stats-card">
-        <div class="stats-value">{st.session_state['images_processed_count']}</div>
-        <div class="stats-label">Images Processed</div>
-    </div>
-    <div class="stats-card">
-        <div class="stats-value">{total_violations}</div>
-        <div class="stats-label">Violations Logged</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Execute the function for the selected page
+    page_to_show = page_router.get(st.session_state.selected_nav)
+    if page_to_show:
+        page_to_show()
+
+    # Footer
     st.markdown("---")
-
-# -------------------------------------------------------------------
-# Main App Logic
-# -------------------------------------------------------------------
-
-# Model Status Indicator
-if model:
-    st.markdown(f"""
-    <div class="status-success"><strong>✅ Model loaded successfully</strong>
-    <small> | Path: app/models/best.pt | Device: {DEVICE}</small></div>
-    """, unsafe_allow_html=True)
-else:
     st.markdown("""
-    <div class="status-warning"><strong>⚠️ Model not loaded.</strong> 
-    <small>Please ensure app/models/best.pt exists.</small></div>
+    <div style="background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 2rem; text-align: center; margin-top: 3rem;">
+        <h3 style="color: var(--text-primary); margin-bottom: 1rem;">🛡️ AI CCTV Surveillance System</h3>
+        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Built with YOLOv8 and Streamlit</p>
+        <p style="color: var(--text-muted); font-size: 0.8rem;">Portfolio Showcase Project</p>
+    </div>
     """, unsafe_allow_html=True)
 
-# Page Router
-page_router = {
-    "dashboard": show_dashboard,
-    "single_image": show_single_image,
-    "batch_processing": show_batch_processing,
-    "webcam": show_webcam,
-    "violations_report": show_violations_report
-}
-# Execute the function for the selected page
-page_to_show = page_router.get(st.session_state.selected_nav)
-if page_to_show:
-    page_to_show()
-
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style="background: var(--dark-card); border: 1px solid var(--dark-border); border-radius: 12px; padding: 2rem; text-align: center; margin-top: 3rem;">
-    <h3 style="color: var(--text-primary); margin-bottom: 1rem;">🛡️ AI CCTV Surveillance System</h3>
-    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Built with YOLOv8 and Streamlit</p>
-    <p style="color: var(--text-muted); font-size: 0.8rem;">Portfolio Showcase Project</p>
-</div>
-""", unsafe_allow_html=True)
+# --- Final Check: Show Login Page or Main App ---
+if not st.session_state.logged_in:
+    show_login_page()
+else:
+    show_main_app()
